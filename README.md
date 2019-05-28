@@ -1,7 +1,7 @@
 # QuantLab
 This project provides the experimental environment used to produce the results reported in the paper *Additive Noise Annealing and Approximation Properties of Quantized Neural Networks* available on [arXiv](https://arxiv.org/abs/1905.10452). If you find this work useful in your research, please cite
 ```
-@inproceedings{cao2018openpose,
+@inproceedings{spallanzani2019ana,
   author = {Matteo Spallanzani and Lukas Cavigelli and Gian Paolo Leonardi and Marko Bertogna and Luca Benini},
   booktitle = {arXiv preprint arXiv:1905.10452},
   title = {{A}dditive {N}oise {A}nnealing and {A}pproximation {P}roperties of {Q}uantized {N}eural {N}etworks},
