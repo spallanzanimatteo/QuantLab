@@ -1,107 +1,55 @@
-# Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
+import math
+import torch
 import torch.nn as nn
-
 from quantlab.nets.stochastic_ops import StochasticActivation, StochasticLinear
+from quantlab.nets.inq_ops import INQController, INQLinear
 
-
-############################
-## BASELINE ARCHITECTURES ##
-############################
-#
-# In order for the baselines to be launched with the same logic as quantized
-# models, an empty quantization scheme and an empty thermostat schedule need
-# to be configured.
-# To configure baseline architectures and their thermostats, use the following
-# templates, replacing `topology_name` with the name of the suitable baseline
-# and adding the necessary parameters to instantiate the architecture:
-#
-# "architecture": {
-#   "class":  "`topology_name`",
-#   "params": {}
-# }
-#
-# "thermostat": {
-#   "class":  "`topology_name`",
-#   "params": {
-#     "noise_scheme": {},
-#     "bindings":     []
-#   }
-# }
-
-class MLPBaseline(nn.Module):
-    """Multi-Layer Perceptron."""
-    def __init__(self, capacity):
-        super(MLPBaseline, self).__init__()
-        nh = int(2048 * capacity)
-        self.phi1_fc  = nn.Linear(28 * 28, nh, bias=False)
-        self.phi1_bn  = nn.BatchNorm1d(nh)
-        self.phi1_act = nn.ReLU6()
-        self.phi2_fc  = nn.Linear(nh, nh, bias=False)
-        self.phi2_bn  = nn.BatchNorm1d(nh)
-        self.phi2_act = nn.ReLU6()
-        self.phi3_fc  = nn.Linear(nh, nh, bias=False)
-        self.phi3_bn  = nn.BatchNorm1d(nh)
-        self.phi3_act = nn.ReLU6()
-        self.phi4_fc  = nn.Linear(nh, 10)
-
-    def forward(self, x):
-        x = x.view(-1, 28 * 28)
-        x = self.phi1_fc(x)
-        x = self.phi1_bn(x)
-        x = self.phi1_act(x)
-        x = self.phi2_fc(x)
-        x = self.phi2_bn(x)
-        x = self.phi2_act(x)
-        x = self.phi3_fc(x)
-        x = self.phi3_bn(x)
-        x = self.phi3_act(x)
-        x = self.phi4_fc(x)
-        return x
-
-    def forward_with_tensor_stats(self, x):
-        stats = []
-        x = x.view(-1, 28 * 28)
-        x = self.phi1_fc(x)
-        stats.append(('phi1_fc_w', self.phi1_fc.weight.data))
-        x = self.phi1_bn(x)
-        x = self.phi1_act(x)
-        x = self.phi2_fc(x)
-        stats.append(('phi2_fc_w', self.phi2_fc.weight.data))
-        x = self.phi2_bn(x)
-        x = self.phi2_act(x)
-        x = self.phi3_fc(x)
-        stats.append(('phi3_fc_w', self.phi3_fc.weight.data))
-        x = self.phi3_bn(x)
-        x = self.phi3_act(x)
-        x = self.phi4_fc(x)
-        stats.append(('phi4_fc_w', self.phi4_fc.weight.data))
-        return x, stats
-
-
-#############################
-## QUANTIZED ARCHITECTURES ##
-#############################
 
 class MLP(nn.Module):
     """Quantized Multi-Layer Perceptron (both weights and activations)."""
-    def __init__(self, capacity, quant_scheme):
-        super(MLP, self).__init__()
+    def __init__(self, capacity, quant_scheme, 
+                 quantAct=True, quantWeights=True, 
+                 weightInqSchedule=None):
+        super().__init__()
         nh = int(2048 * capacity)
-        self.phi1_fc  = StochasticLinear(*quant_scheme['phi1_fc'], 28 * 28, nh, bias=False)
+        if weightInqSchedule != None:
+            weightInqSchedule = {int(k): v for k, v in weightInqSchedule}
+        def activ(name, nc):
+            if quantAct:
+                return StochasticActivation(*quant_scheme[name], nc)
+            else:
+                return nn.ReLU()
+        def linear(name, ni, no, bias=False):
+            if quantWeights:
+                if weightInqSchedule != None:
+                    return INQLinear(ni, no, bias=bias, numBits=2)
+                else: 
+                    return StochasticLinear(*quant_scheme[name], ni, no, bias=bias)
+            else:
+                return nn.Linear(ni, no, bias=bias)
+        
+        self.phi1_fc  = linear('phi1_fc', 28*28, nh, bias=False)
         self.phi1_bn  = nn.BatchNorm1d(nh)
-        self.phi1_act = StochasticActivation(*quant_scheme['phi1_act'], nh)
-        self.phi2_fc  = StochasticLinear(*quant_scheme['phi2_fc'], nh, nh, bias=False)
+        self.phi1_act = activ('phi1_act', nh)
+        self.phi2_fc  = linear('phi2_fc', nh, nh, bias=False)
         self.phi2_bn  = nn.BatchNorm1d(nh)
-        self.phi2_act = StochasticActivation(*quant_scheme['phi2_act'], nh)
-        self.phi3_fc  = StochasticLinear(*quant_scheme['phi3_fc'], nh, nh, bias=False)
+        self.phi2_act = activ('phi2_act', nh)
+        self.phi3_fc  = linear('phi3_fc', nh, nh, bias=False)
         self.phi3_bn  = nn.BatchNorm1d(nh)
-        self.phi3_act = StochasticActivation(*quant_scheme['phi3_act'], nh)
-        self.phi4_fc  = StochasticLinear(*quant_scheme['phi4_fc'], nh, 10, bias=False)
+        self.phi3_act = activ('phi3_act', nh)
+        self.phi4_fc  = linear('phi4_fc', nh, 10, bias=False)
         self.phi4_bn  = nn.BatchNorm1d(10)
+        
+        #weightInqSchedule={15: 0.5, 22: 0.75, 30: 0.875, 37: 0.9375, 44: 1.0}
+        if weightInqSchedule != None: 
+            self.inqController = INQController(INQController.getInqModules(self), 
+                                               weightInqSchedule)
 
-    def forward(self, x):
-        x = x.view(-1, 28 * 28)
+    def forward(self, x, withStats=False):
+        stats = []
+        x = x.view(-1, 28*28)
         x = self.phi1_fc(x)
         x = self.phi1_bn(x)
         x = self.phi1_act(x)
@@ -113,24 +61,14 @@ class MLP(nn.Module):
         x = self.phi3_act(x)
         x = self.phi4_fc(x)
         x = self.phi4_bn(x)
-        return x
+        if withStats:
+            stats.append(('phi1_fc_w', self.phi1_fc.weight.data))
+            stats.append(('phi2_fc_w', self.phi2_fc.weight.data))
+            stats.append(('phi3_fc_w', self.phi3_fc.weight.data))
+            stats.append(('phi4_fc_w', self.phi4_fc.weight.data))
+            return x, stats
+        else: 
+            return x
 
     def forward_with_tensor_stats(self, x):
-        stats = []
-        x = x.view(-1, 28 * 28)
-        x = self.phi1_fc(x)
-        stats.append(('phi1_fc_w', self.phi1_fc.weight.data))
-        x = self.phi1_bn(x)
-        x = self.phi1_act(x)
-        x = self.phi2_fc(x)
-        stats.append(('phi2_fc_w', self.phi2_fc.weight.data))
-        x = self.phi2_bn(x)
-        x = self.phi2_act(x)
-        x = self.phi3_fc(x)
-        stats.append(('phi3_fc_w', self.phi3_fc.weight.data))
-        x = self.phi3_bn(x)
-        x = self.phi3_act(x)
-        x = self.phi4_fc(x)
-        stats.append(('phi4_fc_w', self.phi4_fc.weight.data))
-        x = self.phi4_bn(x)
-        return x, stats
+        return self.forward(x, withStats=True)

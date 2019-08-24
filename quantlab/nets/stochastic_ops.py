@@ -1,4 +1,5 @@
 # Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 import math
 # from scipy.stats import norm, uniform

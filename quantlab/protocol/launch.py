@@ -1,19 +1,22 @@
 # Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 from progress.bar import FillingSquaresBar
 import torch
+import quantlab.nets as nets
 
 
 def train(logbook, meter, net, device, loss_fn, opt, trainloader):
     """Run one epoch of the training experiment."""
     meter.reset()
     bar = FillingSquaresBar('Training \t', max=len(trainloader))
+    controllers = nets.Controller.getControllers(net)
     for i_batch, data in enumerate(trainloader):
         # load data onto device
         inputs, labels = data
         inputs         = inputs.to(device)
         labels         = labels.to(device)
-        # forprop
+        # fwdprop
         outputs        = net(inputs)
         loss           = loss_fn(outputs, labels)
         # update statistics
@@ -30,6 +33,8 @@ def train(logbook, meter, net, device, loss_fn, opt, trainloader):
         opt.zero_grad()
         loss.backward()
         opt.step()
+    for ctrlr in controllers:
+        ctrlr.step(logbook.i_epoch)
     bar.finish()
     stats = {
         'train_loss':   meter.avg_loss,

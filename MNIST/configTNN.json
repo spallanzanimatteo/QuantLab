@@ -1,0 +1,90 @@
+{
+  "architecture": {
+    "class": "MLP",
+    "params": {
+      "capacity": 1,
+      "quant_scheme": {
+        "phi1_fc":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi1_act": ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi2_fc":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi2_act": ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi3_fc":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi3_act": ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi4_fc":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]]
+      }
+    }
+  },
+  "thermostat": {
+    "class": "MLP",
+    "params": {
+      "noise_scheme": {
+        "phi1_fc":  {"stddev_start": [[0.5], [0.5]]},
+        "phi1_act": {"stddev_start": [[0.0], [0.5]]},
+        "phi2_fc":  {"stddev_start": [[0.5], [0.5]]},
+        "phi2_act": {"stddev_start": [[0.0], [0.5]]},
+        "phi3_fc":  {"stddev_start": [[0.5], [0.5]]},
+        "phi3_act": {"stddev_start": [[0.0], [0.5]]},
+        "phi4_fc":  {"stddev_start": [[0.5], [0.5]]}
+      },
+      "bindings": [
+        {
+          "maps":     ["phi1"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi2"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi3"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi4"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        }
+      ],
+      "INQ": {
+        "bindings": [
+          {"maps": ["phi1_fc"]},
+          {"maps": ["phi2_fc"]},
+          {"maps": ["phi3_fc"]},
+          {"maps": ["phi4_fc"]}
+        ],
+        "schedule": {
+          "100": 0.5,
+          "300": 0.75,
+          "500": 0.875,
+          "700": 0.9375,
+          "900": 1.0
+        }
+      }
+    }
+  },
+  "loss_fn": {
+    "class": "HingeLoss",
+    "params": {"num_classes": 10}
+  },
+  "optimizer": {
+    "class": "Adam",
+    "params": {"lr": 1e-3}
+  },
+  "lr_scheduler": {
+    "class": "HandScheduler",
+    "params": {
+      "schedule": {
+        "1100": 1e-1
+      }
+    }
+  },
+  "max_epoch": 1500,
+  "data": {
+    "preprocess": {"augment": false, "valid_fraction": 0.1},
+    "batch_size_train": 256,
+    "batch_size_valid": 64
+  }
+}
