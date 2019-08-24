@@ -1,21 +1,24 @@
 # Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 from progress.bar import FillingSquaresBar
 import torch
+import quantlab.nets as nets
 
 
 def train(logbook, net, device, loss_fn, opt, train_l):
     """Run one epoch of the training experiment."""
-    logbook.meter.reset()
-    bar = FillingSquaresBar('Training \t', max=len(train_l))
-    for i_batch, data in enumerate(train_l):
+    meter.reset()
+    bar = FillingSquaresBar('Training \t', max=len(trainloader))
+    controllers = nets.Controller.getControllers(net)
+    for i_batch, data in enumerate(trainloader):
         # load data onto device
-        inputs, gt_labels = data
-        inputs            = inputs.to(device)
-        gt_labels         = gt_labels.to(device)
-        # forprop
-        pr_outs           = net(inputs)
-        loss              = loss_fn(pr_outs, gt_labels)
+        inputs, labels = data
+        inputs         = inputs.to(device)
+        labels         = labels.to(device)
+        # fwdprop
+        outputs        = net(inputs)
+        loss           = loss_fn(outputs, labels)
         # update statistics
         logbook.meter.update(pr_outs, gt_labels, loss.item(), track_metric=logbook.track_metric)
         bar.suffix = 'Total: {total:} | ETA: {eta:} | Epoch: {epoch:4d} | ({batch:5d}/{num_batches:5d})'.format(
@@ -30,6 +33,8 @@ def train(logbook, net, device, loss_fn, opt, train_l):
         opt.zero_grad()
         loss.backward()
         opt.step()
+    for ctrlr in controllers:
+        ctrlr.step(logbook.i_epoch)
     bar.finish()
     stats = {
         'train_loss':   logbook.meter.avg_loss,

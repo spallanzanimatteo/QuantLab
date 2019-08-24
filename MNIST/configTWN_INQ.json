@@ -1,0 +1,49 @@
+{
+  "architecture": {
+    "class": "MLP",
+    "params": {
+      "capacity": 1,
+      "quantAct": false, 
+      "quantWeights": true,
+      "weightInqSchedule": {
+          "20": 0.5, 
+          "30": 0.75, 
+          "40": 0.875, 
+          "50": 0.9375, 
+          "60": 0.96875, 
+          "70": 1.0
+      }
+    }
+  },
+  "thermostat": {
+    "class": "MLP",
+    "params": {
+      "noise_scheme": {
+      },
+      "bindings": [
+      ]
+    }
+  },
+  "loss_fn": {
+    "class": "HingeLoss",
+    "params": {"num_classes": 10}
+  },
+  "optimizer": {
+    "class": "Adam",
+    "params": {"lr": 1e-3}
+  },
+  "lr_scheduler": {
+    "class": "HandScheduler",
+    "params": {
+      "schedule": {
+        "99999": 1e-1
+      }
+    }
+  },
+  "max_epoch": 1500,
+  "data": {
+    "preprocess": {"augment": false, "valid_fraction": 0.1},
+    "batch_size_train": 256,
+    "batch_size_valid": 64
+  }
+}
