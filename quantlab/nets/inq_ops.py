@@ -9,6 +9,7 @@ class INQController(nets.Controller):
     def __init__(self, modules, schedule):
         super().__init__()
         self.modules = modules
+        schedule = {int(k): v for k, v in schedule.items()} #parse string keys to ints
         self.schedule = schedule # dictionary mapping epoch to fraction
         
     def step(self, epoch):
@@ -19,7 +20,7 @@ class INQController(nets.Controller):
                 
     @staticmethod
     def getInqModules(net):
-        return [m for m in net.modules() if isinstance(m, INQLinear)]
+        return [m for m in net.modules() if isinstance(m, INQLinear) or isinstance(m, INQConv2d) or isinstance(m, INQConv1d)]
     
 def inqQuantize(weight, n_1, n_2):
     """Quantize a single weight using the INQ quantization scheme."""
@@ -95,7 +96,7 @@ class INQLinear(nn.Linear):
         return nn.functional.linear(input, weightAssembled, self.bias)
     
     
-class INQConv1D(nn.Conv1d):
+class INQConv1d(nn.Conv1d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
                  bias=True, padding_mode='zeros', numBits=2):
@@ -132,7 +133,7 @@ class INQConv1D(nn.Conv1d):
                                     self.padding, self.dilation, self.groups)
         
     
-class INQConv2D(nn.Conv2d):
+class INQConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
                  bias=True, padding_mode='zeros', numBits=2):
@@ -158,49 +159,13 @@ class INQConv2D(nn.Conv2d):
 
     def forward(self, input):
         weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
-        return self.conv2d_forward(input, weightAssembled)
-    
-#
-#class INQLinear(nn.Module):
-#    """Affine transform with quantized parameters."""
-#    def __init__(self, in_features, out_features, bias=True, numBits=2):
-#        super().__init__()
-#        
-#        # set linear layer properties
-#        self.in_features  = in_features
-#        self.out_features = out_features
-#        self.weight       = nn.Parameter(torch.Tensor(out_features, in_features))
-#        if bias:
-#            self.bias = nn.Parameter(torch.Tensor(out_features))
-#        else:
-#            self.register_parameter('bias', None)
-#        self.reset_parameters()
-#        
-#        # set INQ parameters
-#        self.numBits = numBits
-#        self.strategy = "magnitude" # or "random"
-#        self.fraction, self.n_1, self.n_2 = 0.0, None, None
-#        weightFrozen = torch.full_like(self.weight, float('NaN'), requires_grad=False)
-#        self.weightFrozen = nn.Parameter(weightFrozen)
-#
-#    def reset_parameters(self):
-#        stdv = 1. / math.sqrt(self.weight.size(1))
-#        # init weights
-#        self.weight.data.normal_(std=stdv)
-#        # init biases
-#        if self.bias is not None:
-#            self.bias.data.uniform_(-stdv, stdv)
-#    
-#    def step(self, fraction):
-#        
-#        fraction, n_1, n_2 = inqStep(fraction, self.fraction, 
-#                                     self.numBits, self.strategy, 
-#                                     self.n_1, self.n_2, 
-#                                     self.weight.data, 
-#                                     self.weightFrozen.data)
-#        self.fraction, self.n_1, self.n_2 = fraction, n_1, n_2
-#
-#    def forward(self, input):
-#        weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
-#        return nn.functional.linear(input, weightAssembled, self.bias)
+        
+        if self.padding_mode == 'circular':
+            expanded_padding = ((self.padding[1] + 1) // 2, self.padding[1] // 2,
+                                (self.padding[0] + 1) // 2, self.padding[0] // 2)
+            return nn.functional.conv2d(nn.functional.pad(input, expanded_padding, mode='circular'),
+                                        weightAssembled, self.bias, self.stride,
+                                        (0,), self.dilation, self.groups)
+        return nn.functional.conv2d(input, weightAssembled, self.bias, self.stride,
+                                    self.padding, self.dilation, self.groups)
 
