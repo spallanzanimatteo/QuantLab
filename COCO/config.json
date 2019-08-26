@@ -1,0 +1,46 @@
+{
+  "description": "",
+  "indiv": {
+    "net": {
+      "class":  "YOLOv3TinyBaseline",
+      "params": {},
+      "pretrained": {
+        "file": "yolov3-tiny.ckpt",
+        "parameters": ["phi01", "phi02", "phi03", "phi04", "phi05", "phi06", "phi07", "phi08", "phi09a", "phi10a", "phi09b", "phi10b", "phi11b"]
+      }
+    },
+    "loss_function": {
+      "class": "YOLOv3Loss",
+      "params": {}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings":      []
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+      "class": "MultiStepLR",
+      "params": {
+        "milestones": [64, 72],
+        "gamma": 0.1
+      }
+    },
+    "data": {
+      "augment": true,
+      "bs_train": 32,
+      "bs_valid": 16
+    },
+    "max_epoch": 200
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 0
+  }
+}

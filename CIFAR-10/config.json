@@ -1,0 +1,126 @@
+{
+  "description": "",
+  "indiv": {
+    "net": {
+      "class": "VGG",
+      "params": {
+        "capacity": 1,
+        "quant_schemes": {
+          "phi1_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi1_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi2_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi2_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi3_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi3_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi4_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi4_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi5_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi5_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi6_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi6_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi7_fc":   ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi7_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi8_fc":   ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi8_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi9_fc":   ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]]
+        }
+      },
+      "pretrained": null
+    },
+    "loss_function": {
+      "class": "HingeLoss",
+      "params": {"num_classes": 10}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {
+          "phi1_conv": {"stddev_start": [0.5, 0.5]},
+          "phi1_act":  {"stddev_start": [0.5, 0.5]},
+          "phi2_conv": {"stddev_start": [0.5, 0.5]},
+          "phi2_act":  {"stddev_start": [0.5, 0.5]},
+          "phi3_conv": {"stddev_start": [0.5, 0.5]},
+          "phi3_act":  {"stddev_start": [0.5, 0.5]},
+          "phi4_conv": {"stddev_start": [0.5, 0.5]},
+          "phi4_act":  {"stddev_start": [0.5, 0.5]},
+          "phi5_conv": {"stddev_start": [0.5, 0.5]},
+          "phi5_act":  {"stddev_start": [0.5, 0.5]},
+          "phi6_conv": {"stddev_start": [0.5, 0.5]},
+          "phi6_act":  {"stddev_start": [0.5, 0.5]},
+          "phi7_fc":   {"stddev_start": [0.5, 0.5]},
+          "phi7_act":  {"stddev_start": [0.5, 0.5]},
+          "phi8_fc":   {"stddev_start": [0.5, 0.5]},
+          "phi8_act":  {"stddev_start": [0.5, 0.5]},
+          "phi9_fc":   {"stddev_start": [0.5, 0.5]}
+        },
+        "bindings": [
+          {
+            "maps":     ["phi1"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 0, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi2"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 100, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi3"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 150, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi4"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 200, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi5"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 250, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi6"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 300, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi7"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 350, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi8"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 400, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi9"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 450, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          }
+        ]
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+      "class": "HandScheduler",
+      "params": {"schedule": {"700": 1e-1}}
+    },
+    "data": {
+      "augment": true,
+      "valid_fraction": 0.1,
+      "bs_train": 256,
+      "bs_valid": 64
+    },
+    "max_epoch": 1000
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
+  }
+}

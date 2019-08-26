@@ -1,0 +1,217 @@
+{
+  "description": "",
+  "indiv": {
+    "net": {
+      "class": "MobileNetv2Residuals",
+      "params": {
+        "capacity": 1,
+        "expansion": 6,
+        "quant_schemes": {
+          "phi06_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi07_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi07_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi08_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi08_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi09_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi12_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi13_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi13_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi14_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi14_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi15_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi15_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi16_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi16_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi17_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi17_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi18_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi21_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi22_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi22_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi23_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi23_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi24_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi24_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi25_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi25_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi26_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi26_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi27_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi27_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi28_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi28_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi29_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi29_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi30_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi33_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi34_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi34_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi35_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi35_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi36_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi36_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi37_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi37_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi38_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi38_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi39_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi42_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi43_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi43_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi44_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi44_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi45_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi45_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi46_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi46_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi47_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi47_act":  ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]],
+          "phi48_conv": ["uniform", [-0.5, 0.5], [-1.0, 0.0, 1.0]]
+        }
+      },
+      "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {
+          "phi06_act":  {"stddev_start": [0.5, 0.5]},
+          "phi07_conv": {"stddev_start": [0.5, 0.5]},
+          "phi07_act":  {"stddev_start": [0.5, 0.5]},
+          "phi08_conv": {"stddev_start": [0.5, 0.5]},
+          "phi08_act":  {"stddev_start": [0.5, 0.5]},
+          "phi09_conv": {"stddev_start": [0.5, 0.5]},
+          "phi12_act":  {"stddev_start": [0.5, 0.5]},
+          "phi13_conv": {"stddev_start": [0.5, 0.5]},
+          "phi13_act":  {"stddev_start": [0.5, 0.5]},
+          "phi14_conv": {"stddev_start": [0.5, 0.5]},
+          "phi14_act":  {"stddev_start": [0.5, 0.5]},
+          "phi15_conv": {"stddev_start": [0.5, 0.5]},
+          "phi15_act":  {"stddev_start": [0.5, 0.5]},
+          "phi16_conv": {"stddev_start": [0.5, 0.5]},
+          "phi16_act":  {"stddev_start": [0.5, 0.5]},
+          "phi17_conv": {"stddev_start": [0.5, 0.5]},
+          "phi17_act":  {"stddev_start": [0.5, 0.5]},
+          "phi18_conv": {"stddev_start": [0.5, 0.5]},
+          "phi21_act":  {"stddev_start": [0.5, 0.5]},
+          "phi22_conv": {"stddev_start": [0.5, 0.5]},
+          "phi22_act":  {"stddev_start": [0.5, 0.5]},
+          "phi23_conv": {"stddev_start": [0.5, 0.5]},
+          "phi23_act":  {"stddev_start": [0.5, 0.5]},
+          "phi24_conv": {"stddev_start": [0.5, 0.5]},
+          "phi24_act":  {"stddev_start": [0.5, 0.5]},
+          "phi25_conv": {"stddev_start": [0.5, 0.5]},
+          "phi25_act":  {"stddev_start": [0.5, 0.5]},
+          "phi26_conv": {"stddev_start": [0.5, 0.5]},
+          "phi26_act":  {"stddev_start": [0.5, 0.5]},
+          "phi27_conv": {"stddev_start": [0.5, 0.5]},
+          "phi27_act":  {"stddev_start": [0.5, 0.5]},
+          "phi28_conv": {"stddev_start": [0.5, 0.5]},
+          "phi28_act":  {"stddev_start": [0.5, 0.5]},
+          "phi29_conv": {"stddev_start": [0.5, 0.5]},
+          "phi29_act":  {"stddev_start": [0.5, 0.5]},
+          "phi30_conv": {"stddev_start": [0.5, 0.5]},
+          "phi33_act":  {"stddev_start": [0.5, 0.5]},
+          "phi34_conv": {"stddev_start": [0.5, 0.5]},
+          "phi34_act":  {"stddev_start": [0.5, 0.5]},
+          "phi35_conv": {"stddev_start": [0.5, 0.5]},
+          "phi35_act":  {"stddev_start": [0.5, 0.5]},
+          "phi36_conv": {"stddev_start": [0.5, 0.5]},
+          "phi36_act":  {"stddev_start": [0.5, 0.5]},
+          "phi37_conv": {"stddev_start": [0.5, 0.5]},
+          "phi37_act":  {"stddev_start": [0.5, 0.5]},
+          "phi38_conv": {"stddev_start": [0.5, 0.5]},
+          "phi38_act":  {"stddev_start": [0.5, 0.5]},
+          "phi39_conv": {"stddev_start": [0.5, 0.5]},
+          "phi42_act":  {"stddev_start": [0.5, 0.5]},
+          "phi43_conv": {"stddev_start": [0.5, 0.5]},
+          "phi43_act":  {"stddev_start": [0.5, 0.5]},
+          "phi44_conv": {"stddev_start": [0.5, 0.5]},
+          "phi44_act":  {"stddev_start": [0.5, 0.5]},
+          "phi45_conv": {"stddev_start": [0.5, 0.5]},
+          "phi45_act":  {"stddev_start": [0.5, 0.5]},
+          "phi46_conv": {"stddev_start": [0.5, 0.5]},
+          "phi46_act":  {"stddev_start": [0.5, 0.5]},
+          "phi47_conv": {"stddev_start": [0.5, 0.5]},
+          "phi47_act":  {"stddev_start": [0.5, 0.5]},
+          "phi48_conv": {"stddev_start": [0.5, 0.5]}
+        },
+        "bindings": [
+          {
+            "maps":     ["phi06_act", "phi07", "phi08", "phi09_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 0, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi12_act", "phi13", "phi14", "phi15_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 50, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi15_act", "phi16", "phi17", "phi18_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 100, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi21_act", "phi22", "phi23", "phi24_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 150, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi24_act", "phi25", "phi26", "phi27_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 200, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi27_act", "phi28", "phi29", "phi30_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 250, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi33_act", "phi34", "phi35", "phi36_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 300, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi36_act", "phi37", "phi38", "phi39_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 350, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi42_act", "phi43", "phi44", "phi45_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 400, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          },
+          {
+            "maps":     ["phi45_act", "phi46", "phi47", "phi48_conv"],
+            "forward":  {"class": "Linear",   "params": {"t_start": 450, "t_decay": 50}},
+            "backward": {"class": "Constant", "params": {}}
+          }
+        ]
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+      "class": "HandScheduler",
+      "params": {"schedule": {"700": 1e-1}}
+    },
+    "data": {
+      "augment": true,
+      "bs_train": 256,
+      "bs_valid": 64
+    },
+    "max_epoch": 1000
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
+  }
+}

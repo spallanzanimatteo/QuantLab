@@ -1,0 +1,4 @@
+{
+  "data": "[data_storage(SSD)]",
+  "logs": "[logs_storage(HDD)]"
+}
