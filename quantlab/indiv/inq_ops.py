@@ -44,7 +44,7 @@ def inqStep(fracNew, fracOld, numBits, strategy, n_1, n_2, weight, weightFrozen)
         #init n_1, n_2 now that we know the weight range
         s = torch.max(torch.abs(weight)).item()
         n_1 = math.floor(math.log((4*s)/3, 2))
-        n_2 = int(n_1 + 1 - (2**(numBits-1))/2)
+        n_2 = int(n_1 + 2 - (2**(numBits-1)))
     
     #get number of weights to quantize
     prevCount = weightFrozen.numel() - torch.isnan(weightFrozen).sum(dtype=torch.long).item()
