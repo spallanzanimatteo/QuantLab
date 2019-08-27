@@ -2,17 +2,20 @@
   "architecture": {
     "class": "VGG",
     "params": {
-      "quantAct": false, 
+      "capacity": 1,
+      "quantAct": true, 
+      "quantActSTENumLevels": 3, 
       "quantWeights": true,
       "weightInqBits": 2, 
       "weightInqSchedule": {
-           "70": 0.5,
-          "150": 0.75,
-          "190": 0.875,
-          "230": 0.9375,
-          "270": 0.96875,
-          "310": 1.0
-      }
+          "150": 0.5,
+          "230": 0.75,
+          "310": 0.875,
+          "390": 0.9375,
+          "470": 0.96875,
+          "550": 1.0
+      },
+      "quant_scheme": {}
     }
   },
   "thermostat": {
@@ -34,24 +37,24 @@
     "class": "HandScheduler",
     "params": {
       "schedule": {
-        "60": 1e-1,
-        "71": 1.0,
-        "140": 1e-1,
+        "140": 0.1,
         "151": 1.0,
-        "180": 1e-1,
-        "191": 1.0,
-        "220": 1e-1,
+        "220": 0.1,
         "231": 1.0,
-        "260": 1e-1,
-        "271": 1.0,
-        "300": 1e-1,
+        "300": 0.1,
         "311": 1.0,
-        "340": 1e-1,
-        "370": 1e-2
+        "380": 0.1,
+        "391": 1.0,
+        "460": 0.1,
+        "471": 1.0,
+        "540": 0.1,
+        "551": 1.0,
+        "600": 0.1,
+        "650": 0.01
       }
     }
   },
-  "max_epoch": 400,
+  "max_epoch": 750,
   "data": {
     "preprocess": {"augment": true, "valid_fraction": 0.1},
     "batch_size_train": 256,

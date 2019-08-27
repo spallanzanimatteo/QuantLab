@@ -6,35 +6,31 @@ import torch.nn as nn
 import quantlab.nets as nets
 
 class INQController(nets.Controller):
-    def __init__(self, modules, schedule):
+    def __init__(self, modules, schedule, clearOptimStateOnStep=False):
         super().__init__()
         self.modules = modules
         schedule = {int(k): v for k, v in schedule.items()} #parse string keys to ints
         self.schedule = schedule # dictionary mapping epoch to fraction
+        self.clearOptimStateOnStep = clearOptimStateOnStep
         
-    def step(self, epoch):
-        if epoch in self.schedule.keys():
-            fraction = self.schedule[epoch]
-            for m in self.modules: 
-                m.step(fraction)
+    def step(self, epoch, optimizer=None):
+        #check if INQ fraction needs to be adapted
+        if epoch not in self.schedule.keys():
+            return
+        
+        #step each INQ module
+        fraction = self.schedule[epoch]
+        for m in self.modules: 
+            m.step(fraction)
+
+        #clear optimizer state (e.g. Adam's momentum)
+        if self.clearOptimStateOnStep and optimizer != None:
+            optimizer.state.clear()
                 
     @staticmethod
     def getInqModules(net):
         return [m for m in net.modules() if isinstance(m, INQLinear) or isinstance(m, INQConv2d) or isinstance(m, INQConv1d)]
     
-def inqQuantize(weight, n_1, n_2):
-    """Quantize a single weight using the INQ quantization scheme."""
-    alpha = 0
-    beta = 2 ** n_2
-    abs_weight = weight.abs()
-    quantized_weight = torch.empty_like(weight)
-
-    for i in range(n_2, n_1 + 1):
-        selector = (abs_weight >= (alpha + beta) / 2)*(abs_weight < 3*beta/2)
-        quantized_weight[selector] = beta*weight[selector].sign()
-        alpha = 2 ** i
-        beta = 2 ** (i + 1)
-    return quantized_weight
 
 def inqStep(fracNew, fracOld, numBits, strategy, n_1, n_2, weight, weightFrozen):
      #keep track of quantized fraction to save time
@@ -66,6 +62,7 @@ def inqStep(fracNew, fracOld, numBits, strategy, n_1, n_2, weight, weightFrozen)
     return fracNew, n_1, n_2
 
 def inqAssembleWeight(weight, weightFrozen):
+    weightFrozen = weightFrozen.detach()
     frozen = ~torch.isnan(weightFrozen)
     weightAssembled = torch.zeros_like(weightFrozen)
     weightAssembled[frozen] = weightFrozen[frozen]
@@ -171,3 +168,55 @@ class INQConv2d(nn.Conv2d):
         return nn.functional.conv2d(input, weightAssembled, self.bias, self.stride,
                                     self.padding, self.dilation, self.groups)
 
+
+
+
+def inqQuantize(weight, n_1, n_2):
+    """Quantize a single weight using the INQ quantization scheme."""
+    import itertools
+    
+    quantLevelsPos = (2**i for i in range(n_2, n_1+1))
+    quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
+    quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
+    
+    bestQuantLevel = torch.zeros_like(weight)
+    minQuantError = torch.full_like(weight, float('inf'))
+    
+    for ql in quantLevels:
+        qerr = (weight-ql).abs()
+        mask = qerr < minQuantError
+        bestQuantLevel[mask] = ql
+        minQuantError[mask] = qerr[mask]
+    
+    quantizedWeight = bestQuantLevel
+    
+#    alpha = 0
+#    beta = 2 ** n_2
+#    abs_weight = weight.abs()
+#    quantizedWeight = torch.empty_like(weight)
+#
+#    for i in range(n_2, n_1 + 1):
+#        selector = (abs_weight >= (alpha + beta) / 2)*(abs_weight <= 3*beta/2)
+#        quantizedWeight[selector] = beta*weight[selector].sign()
+#        alpha = 2 ** i
+#        beta = 2 ** (i + 1)
+    return quantizedWeight
+
+if __name__ == '__main__':
+    x = torch.linspace(-2,2,100)
+    numBits = 2
+    s = torch.max(torch.abs(x)).item()
+    n_1 = math.floor(math.log((4*s)/3, 2))
+    n_2 = int(n_1 + 2 - (2**(numBits-1)))
+    x_q = inqQuantize(x, n_1, n_2)
+    import matplotlib.pyplot as plt
+    plt.clf()
+    plt.plot(x.numpy())
+    plt.plot(x_q.numpy())
+    
+    
+    
+    
+    
+    
+    
