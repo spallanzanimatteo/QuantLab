@@ -6,11 +6,12 @@ import torch.nn as nn
 
 from quantlab.nets.stochastic_ops import StochasticActivation, StochasticLinear, StochasticConv2d
 from quantlab.nets.inq_ops import INQController, INQLinear, INQConv2d
+from quantlab.nets.ste_ops import STEActivation
 
 class VGG(nn.Module):
     """Quantizable VGG."""
     def __init__(self, capacity=1, quant_scheme=None, 
-                 quantAct=True, quantWeights=True, 
+                 quantAct=True, quantActSTENumLevels=None, quantWeights=True, 
                  weightInqSchedule=None, weightInqBits=2):
         
         super().__init__()
@@ -23,8 +24,13 @@ class VGG(nn.Module):
         
         def activ(name, nc):
             if quantAct:
-                return StochasticActivation(*quant_scheme[name], nc)
+                if quantActSTENumLevels != None and quantActSTENumLevels > 0: 
+                    return STEActivation(startEpoch=0, 
+                                         numLevels=quantActSTENumLevels)
+                else:
+                    return StochasticActivation(*quant_scheme[name], nc)
             else: 
+                assert(quantActSTENumLevels == None or quantActSTENumLevels <= 0)
                 return nn.ReLU(inplace=True)
             
         def conv2d(name, ni, no, kernel_size=3, stride=1, padding=1, bias=False):
@@ -86,7 +92,8 @@ class VGG(nn.Module):
         
         if weightInqSchedule != None: 
             self.inqController = INQController(INQController.getInqModules(self), 
-                                               weightInqSchedule)
+                                               weightInqSchedule, 
+                                               clearOptimStateOnStep=True)
 
     def forward(self, x, withStats=False):
         x = self.phi1_conv(x)
@@ -134,9 +141,9 @@ class VGG(nn.Module):
         return self.forward(x, withStats=True)
     
 # LOAD NETWORK
-#if __name__ == '__main__':
-#    import torch
-#    import quantlab.CIFAR10.topology as topo
-#    model = VGG(quantAct=False, quantWeights=True, weightInqSchedule={'1': 1.0})
-#    state_dicts = torch.load('../../CIFAR10/log/exp01/save/epoch0300.ckpt', map_location='cpu') 
-#    model.load_state_dict(state_dicts['net'])
+if __name__ == '__main__':
+    import torch
+    import quantlab.CIFAR10.topology as topo
+    model = VGG(quantAct=False, quantWeights=True, weightInqSchedule={'1': 1.0})
+    state_dicts = torch.load('../../CIFAR10/log/exp27/save/epoch0100.ckpt', map_location='cpu')
+    model.load_state_dict(state_dicts['net'])
