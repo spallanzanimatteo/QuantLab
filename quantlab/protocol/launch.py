@@ -34,7 +34,7 @@ def train(logbook, meter, net, device, loss_fn, opt, trainloader):
         loss.backward()
         opt.step()
     for ctrlr in controllers:
-        ctrlr.step(logbook.i_epoch)
+        ctrlr.step(logbook.i_epoch, opt)
     bar.finish()
     stats = {
         'train_loss':   meter.avg_loss,

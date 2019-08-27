@@ -3,16 +3,7 @@
     "class": "VGG",
     "params": {
       "quantAct": false, 
-      "quantWeights": true,
-      "weightInqBits": 2, 
-      "weightInqSchedule": {
-           "70": 0.5,
-          "150": 0.75,
-          "190": 0.875,
-          "230": 0.9375,
-          "270": 0.96875,
-          "310": 1.0
-      }
+      "quantWeights": false
     }
   },
   "thermostat": {
@@ -35,23 +26,13 @@
     "params": {
       "schedule": {
         "60": 1e-1,
-        "71": 1.0,
-        "140": 1e-1,
-        "151": 1.0,
-        "180": 1e-1,
-        "191": 1.0,
-        "220": 1e-1,
-        "231": 1.0,
-        "260": 1e-1,
-        "271": 1.0,
-        "300": 1e-1,
-        "311": 1.0,
-        "340": 1e-1,
-        "370": 1e-2
+        "80": 1.0,
+        "100": 1e-1,
+        "120": 1e-2
       }
     }
   },
-  "max_epoch": 400,
+  "max_epoch": 200,
   "data": {
     "preprocess": {"augment": true, "valid_fraction": 0.1},
     "batch_size_train": 256,
