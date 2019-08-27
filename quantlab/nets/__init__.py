@@ -1,3 +1,4 @@
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 class Controller(object):
     def __init__(self):
@@ -5,4 +6,6 @@ class Controller(object):
     
     @staticmethod
     def getControllers(net):
-        return [v for v in net.__dict__.values() if isinstance(v, Controller)]
+        return [v for m in net.modules() 
+                  for v in m.__dict__.values() 
+                     if isinstance(v, Controller)]
