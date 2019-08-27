@@ -1,0 +1,47 @@
+{
+  "architecture": {
+    "class": "VGG",
+    "params": {
+      "capacity": 1,
+      "quantAct": true, 
+      "quantActSTENumLevels": 3, 
+      "quantWeights": false,
+      "quant_scheme": {
+      }
+    }
+  },
+  "thermostat": {
+    "class": "VGG",
+    "params": {
+      "noise_scheme": {
+      },
+      "bindings": [
+      ]
+    }
+  },
+  "loss_fn": {
+      "class": "HingeLoss",
+    "params": {"num_classes": 10}
+  },
+  "optimizer": {
+    "class": "Adam",
+    "params": {"lr": 1e-3}
+  },
+  "lr_scheduler": {
+    "class": "HandScheduler",
+    "params": {
+      "schedule": {
+        "150": 0.1,
+        "180": 1.0,
+        "210": 0.1,
+        "240": 0.01
+      }
+    }
+  },
+  "max_epoch": 400,
+  "data": {
+    "preprocess": {"augment": true, "valid_fraction": 0.1},
+    "batch_size_train": 256,
+    "batch_size_valid": 64
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "architecture": {
+    "class": "VGG",
+    "params": {
+      "capacity": 1,
+      "quantAct": true, 
+      "quantWeights": false,
+      "quant_scheme": {
+        "phi1_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi2_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi3_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi4_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi5_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi6_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi7_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]],
+        "phi8_act":  ["uniform", [-1.0, 0.0, 1.0], [-0.5, 0.5]]
+      }
+    }
+  },
+  "thermostat": {
+    "class": "VGG",
+    "params": {
+      "noise_scheme": {
+        "phi1_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi2_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi3_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi4_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi5_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi6_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi7_act":  {"stddev_start": [[0.0], [0.5]]},
+        "phi8_act":  {"stddev_start": [[0.0], [0.5]]}
+      },
+      "bindings": [
+        {
+          "maps":     ["phi1"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi2"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi3"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi4"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi5"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi6"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi7"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi8"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        },
+        {
+          "maps":     ["phi9"],
+          "forward":  {"class": "Constant", "params": {}},
+          "backward": {"class": "Constant", "params": {}}
+        }
+      ]
+    }
+  },
+  "loss_fn": {
+      "class": "HingeLoss",
+    "params": {"num_classes": 10}
+  },
+  "optimizer": {
+    "class": "Adam",
+    "params": {"lr": 1e-3}
+  },
+  "lr_scheduler": {
+    "class": "HandScheduler",
+    "params": {
+      "schedule": {
+        "150": 0.1,
+        "180": 1.0,
+        "210": 0.1,
+        "240": 0.01
+      }
+    }
+  },
+  "max_epoch": 400,
+  "data": {
+    "preprocess": {"augment": true, "valid_fraction": 0.1},
+    "batch_size_train": 256,
+    "batch_size_valid": 64
+  }
+}
