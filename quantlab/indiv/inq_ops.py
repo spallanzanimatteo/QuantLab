@@ -1,9 +1,9 @@
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
+
 import math
 import torch 
 import torch.nn as nn
-
 import quantlab.nets as nets
-
 
 class INQController(nets.Controller):
     def __init__(self, modules, schedule):
@@ -60,6 +60,8 @@ def inqStep(fracNew, fracOld, numBits, strategy, n_1, n_2, weight, weightFrozen)
     
     #quantize the weights at these indexes
     weightFrozen.flatten()[idxsFreeze] = inqQuantize(weight.flatten()[idxsFreeze], n_1, n_2)
+    
+#    fracNonQuant = torch.isnan(weightFrozen).sum(dtype=torch.long).item()/weightFrozen.numel()
     
     return fracNew, n_1, n_2
 

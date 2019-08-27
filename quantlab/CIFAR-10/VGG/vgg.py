@@ -132,3 +132,11 @@ class VGG(nn.Module):
 
     def forward_with_tensor_stats(self, x):
         return self.forward(x, withStats=True)
+    
+# LOAD NETWORK
+#if __name__ == '__main__':
+#    import torch
+#    import quantlab.CIFAR10.topology as topo
+#    model = VGG(quantAct=False, quantWeights=True, weightInqSchedule={'1': 1.0})
+#    state_dicts = torch.load('../../CIFAR10/log/exp01/save/epoch0300.ckpt', map_location='cpu') 
+#    model.load_state_dict(state_dicts['net'])
