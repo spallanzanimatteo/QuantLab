@@ -35,7 +35,7 @@ class INQController(nets.Controller):
 def inqStep(fracNew, fracOld, numBits, strategy, n_1, n_2, weight, weightFrozen):
      #keep track of quantized fraction to save time
     if fracNew == fracOld:
-        return
+        return fracNew, n_1, n_2
     if fracOld == 0.0:
         #init n_1, n_2 now that we know the weight range
         s = torch.max(torch.abs(weight)).item()
@@ -71,7 +71,8 @@ def inqAssembleWeight(weight, weightFrozen):
 
 
 class INQLinear(nn.Linear):
-    def __init__(self, in_features, out_features, bias=True, numBits=2):
+    def __init__(self, in_features, out_features, bias=True, 
+                 numBits=2, reinitOnStep=False):
         
         super().__init__(in_features, out_features, bias)
         
@@ -81,6 +82,7 @@ class INQLinear(nn.Linear):
         self.fraction, self.n_1, self.n_2 = 0.0, None, None
         weightFrozen = torch.full_like(self.weight, float('NaN'), requires_grad=False)
         self.weightFrozen = nn.Parameter(weightFrozen)
+        self.reinitOnStep = reinitOnStep
         
     def step(self, fraction):
         fraction, n_1, n_2 = inqStep(fraction, self.fraction, 
@@ -89,6 +91,8 @@ class INQLinear(nn.Linear):
                                      self.weight.data, 
                                      self.weightFrozen.data)
         self.fraction, self.n_1, self.n_2 = fraction, n_1, n_2
+        if self.reinitOnStep:
+            self.reset_parameters()
 
     def forward(self, input):
         weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
@@ -98,7 +102,8 @@ class INQLinear(nn.Linear):
 class INQConv1d(nn.Conv1d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
-                 bias=True, padding_mode='zeros', numBits=2):
+                 bias=True, padding_mode='zeros', 
+                 numBits=2, reinitOnStep=False):
         
         super().__init__(in_channels, out_channels, kernel_size, 
                  stride, padding, dilation, groups, 
@@ -110,6 +115,7 @@ class INQConv1d(nn.Conv1d):
         self.fraction, self.n_1, self.n_2 = 0.0, None, None
         weightFrozen = torch.full_like(self.weight, float('NaN'), requires_grad=False)
         self.weightFrozen = nn.Parameter(weightFrozen)
+        self.reinitOnStep = reinitOnStep
         
     def step(self, fraction):
         fraction, n_1, n_2 = inqStep(fraction, self.fraction, 
@@ -118,6 +124,8 @@ class INQConv1d(nn.Conv1d):
                                      self.weight.data, 
                                      self.weightFrozen.data)
         self.fraction, self.n_1, self.n_2 = fraction, n_1, n_2
+        if self.reinitOnStep:
+            self.reset_parameters()
 
     def forward(self, input):
         weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
@@ -135,7 +143,8 @@ class INQConv1d(nn.Conv1d):
 class INQConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
-                 bias=True, padding_mode='zeros', numBits=2):
+                 bias=True, padding_mode='zeros', 
+                 numBits=2, reinitOnStep=False):
         
         super().__init__(in_channels, out_channels, kernel_size, 
                  stride, padding, dilation, groups, 
@@ -147,6 +156,7 @@ class INQConv2d(nn.Conv2d):
         self.fraction, self.n_1, self.n_2 = 0.0, None, None
         weightFrozen = torch.full_like(self.weight, float('NaN'), requires_grad=False)
         self.weightFrozen = nn.Parameter(weightFrozen)
+        self.reinitOnStep = reinitOnStep
         
     def step(self, fraction):
         fraction, n_1, n_2 = inqStep(fraction, self.fraction, 
@@ -155,6 +165,8 @@ class INQConv2d(nn.Conv2d):
                                      self.weight.data, 
                                      self.weightFrozen.data)
         self.fraction, self.n_1, self.n_2 = fraction, n_1, n_2
+        if self.reinitOnStep:
+            self.reset_parameters()
 
     def forward(self, input):
         weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)

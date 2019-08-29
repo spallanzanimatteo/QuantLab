@@ -1,4 +1,5 @@
 # Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 import math
 import torch.nn as nn
@@ -30,7 +31,7 @@ import torch.nn as nn
 class MobileNetv2Baseline(nn.Module):
     """MobileNetv2 Convolutional Neural Network."""
     def __init__(self, capacity, expansion):
-        super(MobileNetv2Baseline, self).__init__()
+        super().__init__()
         c0 = 3
         t0 = int(32 * capacity) * 1
         c1 = int(16 * capacity)
@@ -213,7 +214,7 @@ class MobileNetv2Baseline(nn.Module):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
 
-    def forward(self, x):
+    def forward(self, x, withStats=False):
         # first block
         x     = self.phi01_conv(x)
         x     = self.phi01_bn(x)
@@ -374,6 +375,11 @@ class MobileNetv2Baseline(nn.Module):
         x     = self.phi53_avg(x)
         x     = x.view(x.size(0), -1)
         x     = self.phi53_fc(x)
+        
+        if withStats:
+            stats = []
+            return x, stats
+
         return x
 
     def forward_with_tensor_stats(self, x):

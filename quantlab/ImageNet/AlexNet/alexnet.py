@@ -1,4 +1,5 @@
 # Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 import torch
 import torch.nn as nn
@@ -9,7 +10,7 @@ from quantlab.indiv.stochastic_ops import StochasticActivation, StochasticLinear
 class AlexNet(nn.Module):
     """Quantized AlexNet (both weights and activations)."""
     def __init__(self, capacity, quant_schemes):
-        super(AlexNet, self).__init__()
+        super().__init__()
         c0 = 3
         c1 = int(64 * capacity)
         c2 = int(64 * 3 * capacity)
@@ -46,7 +47,7 @@ class AlexNet(nn.Module):
         self.phi8_fc   = StochasticLinear(*quant_schemes['phi8_fc'], nh, 1000, bias=False)
         self.phi8_bn   = nn.BatchNorm1d(1000)
 
-    def forward(self, x):
+    def forward(self, x, withStats=False):
         x = self.phi1_conv(x)
         x = self.phi1_mp(x)
         x = self.phi1_bn(x)
@@ -74,43 +75,18 @@ class AlexNet(nn.Module):
         x = self.phi7_act(x)
         x = self.phi8_fc(x)
         x = self.phi8_bn(x)
+        if withStats:
+            stats = []
+            stats.append(('phi1_conv_w', self.phi1_conv.weight.data))
+            stats.append(('phi2_conv_w', self.phi2_conv.weight.data))
+            stats.append(('phi3_conv_w', self.phi3_conv.weight.data))
+            stats.append(('phi4_conv_w', self.phi4_conv.weight.data))
+            stats.append(('phi5_conv_w', self.phi5_conv.weight.data))
+            stats.append(('phi6_fc_w', self.phi6_fc.weight.data))
+            stats.append(('phi7_fc_w', self.phi7_fc.weight.data))
+            stats.append(('phi8_fc_w', self.phi8_fc.weight.data))
+            return x, stats
         return x
 
     def forward_with_tensor_stats(self, x):
-        stats = []
-        x = self.phi1_conv(x)
-        stats.append(('phi1_conv_w', self.phi1_conv.weight.data))
-        x = self.phi1_mp(x)
-        x = self.phi1_bn(x)
-        x = self.phi1_act(x)
-        x = self.phi2_conv(x)
-        stats.append(('phi2_conv_w', self.phi2_conv.weight.data))
-        x = self.phi2_mp(x)
-        x = self.phi2_bn(x)
-        x = self.phi2_act(x)
-        x = self.phi3_conv(x)
-        stats.append(('phi3_conv_w', self.phi3_conv.weight.data))
-        x = self.phi3_bn(x)
-        x = self.phi3_act(x)
-        x = self.phi4_conv(x)
-        stats.append(('phi4_conv_w', self.phi4_conv.weight.data))
-        x = self.phi4_bn(x)
-        x = self.phi4_act(x)
-        x = self.phi5_conv(x)
-        stats.append(('phi5_conv_w', self.phi5_conv.weight.data))
-        x = self.phi5_mp(x)
-        x = self.phi5_bn(x)
-        x = self.phi5_act(x)
-        x = x.view(-1, torch.Tensor(list(x.size()[-3:])).to(torch.int32).prod().item())
-        x = self.phi6_fc(x)
-        stats.append(('phi6_fc_w', self.phi6_fc.weight.data))
-        x = self.phi6_bn(x)
-        x = self.phi6_act(x)
-        x = self.phi7_fc(x)
-        stats.append(('phi7_fc_w', self.phi7_fc.weight.data))
-        x = self.phi7_bn(x)
-        x = self.phi7_act(x)
-        x = self.phi8_fc(x)
-        stats.append(('phi8_fc_w', self.phi8_fc.weight.data))
-        x = self.phi8_bn(x)
-        return stats, x
+        return self.forward(x, withStats=True)

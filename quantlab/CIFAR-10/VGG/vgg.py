@@ -12,7 +12,8 @@ class VGG(nn.Module):
     """Quantizable VGG."""
     def __init__(self, capacity=1, quant_scheme=None, 
                  quantAct=True, quantActSTENumLevels=None, quantWeights=True, 
-                 weightInqSchedule=None, weightInqBits=2):
+                 weightInqSchedule=None, weightInqBits=2, weightInqReinit=False, 
+                 quantSkipFirstLayer=False):
         
         super().__init__()
         
@@ -42,7 +43,8 @@ class VGG(nn.Module):
                 else:
                     return INQConv2d(ni, no, 
                                      kernel_size=kernel_size, stride=stride, 
-                                     padding=padding, bias=bias)
+                                     padding=padding, bias=bias, 
+                                     reinitOnStep=weightInqReinit)
             else: 
                 return nn.Conv2d(ni, no, 
                                  kernel_size=kernel_size, stride=stride, 
@@ -53,13 +55,17 @@ class VGG(nn.Module):
                 if weightInqSchedule == None:
                     return StochasticLinear(*quant_scheme[name], ni, no, bias=bias)
                 else:
-                    return INQLinear(ni, no, bias=bias)
+                    return INQLinear(ni, no, bias=bias, 
+                                     reinitOnStep=weightInqReinit)
             else: 
                 return nn.Linear(ni, no, bias=bias)
         
         
         # convolutional layers
-        self.phi1_conv = conv2d('phi1_conv', c0, c1)
+        if quantSkipFirstLayer:
+            self.phi1_conv = nn.Conv2d(c0, c1, kernel_size=3, padding=1, bias=False)
+        else:
+            self.phi1_conv = conv2d('phi1_conv', c0, c1)
         self.phi1_bn   = nn.BatchNorm2d(c1)
         self.phi1_act  = activ('phi1_act', c1)
         self.phi2_conv = conv2d('phi2_conv', c1, c1)
@@ -142,8 +148,6 @@ class VGG(nn.Module):
     
 # LOAD NETWORK
 if __name__ == '__main__':
-    import torch
-    import quantlab.CIFAR10.topology as topo
     model = VGG(quantAct=False, quantWeights=True, weightInqSchedule={'1': 1.0})
-    state_dicts = torch.load('../../CIFAR10/log/exp27/save/epoch0100.ckpt', map_location='cpu')
+    state_dicts = torch.load('../../CIFAR10/log/exp21/save/epoch0200.ckpt', map_location='cpu')
     model.load_state_dict(state_dicts['net'])
