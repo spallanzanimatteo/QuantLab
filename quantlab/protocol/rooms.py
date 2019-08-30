@@ -45,6 +45,7 @@ def train(logbook, net, device, loss_fn, opt, train_l):
     logbook.writer.add_scalar('learning_rate', opt.param_groups[0]['lr'], global_step=logbook.i_epoch)
     return stats
 
+
 def test(logbook, net, device, loss_fn, test_l, valid=False):
     """Run a validation epoch."""
     logbook.meter.reset()

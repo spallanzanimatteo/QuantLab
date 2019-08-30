@@ -109,4 +109,5 @@ class AlexNetBaseline(nn.Module):
         return x
 
     def forward_with_tensor_stats(self, x):
-        return self.forward(x, withStats=True)
+        x, stats = self.forward(x, withStats=True)
+        return x, stats

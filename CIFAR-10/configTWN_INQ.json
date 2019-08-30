@@ -19,8 +19,8 @@
       "pretrained": null
     },
     "loss_function": {
-      "class": "HingeLoss",
-      "params": {"num_classes": 10}
+      "class": "CrossEntropyLoss",
+      "params": {}
     }
   },
   "treat": {
