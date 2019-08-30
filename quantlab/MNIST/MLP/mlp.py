@@ -9,7 +9,7 @@ from quantlab.indiv.inq_ops import INQController, INQLinear
 
 class MLP(nn.Module):
     """Quantized Multi-Layer Perceptron (both weights and activations)."""
-    def __init__(self, capacity, quant_scheme, 
+    def __init__(self, capacity, quant_schemes, 
                  quantAct=True, quantWeights=True, 
                  weightInqSchedule=None):
         super().__init__()

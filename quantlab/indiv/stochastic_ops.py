@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _single, _pair, _triple
 
-from .cuda import init_ffi_lib, UHP_forward, UHP_backward
+#from .cuda import init_ffi_lib, UHP_forward, UHP_backward
 
 
 class UniformHeavisideProcess(torch.autograd.Function):

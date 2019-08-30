@@ -10,9 +10,9 @@ from quantlab.indiv.ste_ops import STEActivation
 
 class VGG(nn.Module):
     """Quantizable VGG."""
-    def __init__(self, capacity=1, quant_scheme=None, 
+    def __init__(self, capacity=1, quant_schemes=None, 
                  quantAct=True, quantActSTENumLevels=None, quantWeights=True, 
-                 weightInqSchedule=None, weightInqBits=2, weightInqReinit=False, 
+                 weightInqSchedule=None, weightInqBits=2, 
                  quantSkipFirstLayer=False):
         
         super().__init__()
@@ -29,7 +29,7 @@ class VGG(nn.Module):
                     return STEActivation(startEpoch=0, 
                                          numLevels=quantActSTENumLevels)
                 else:
-                    return StochasticActivation(*quant_scheme[name], nc)
+                    return StochasticActivation(*quant_schemes[name], nc)
             else: 
                 assert(quantActSTENumLevels == None or quantActSTENumLevels <= 0)
                 return nn.ReLU(inplace=True)
@@ -37,14 +37,13 @@ class VGG(nn.Module):
         def conv2d(name, ni, no, kernel_size=3, stride=1, padding=1, bias=False):
             if quantWeights:
                 if weightInqSchedule == None:
-                    return StochasticConv2d(*quant_scheme[name], ni, no, 
+                    return StochasticConv2d(*quant_schemes[name], ni, no, 
                                             kernel_size=kernel_size, stride=stride, 
                                             padding=padding, bias=bias)
                 else:
                     return INQConv2d(ni, no, 
                                      kernel_size=kernel_size, stride=stride, 
-                                     padding=padding, bias=bias, 
-                                     reinitOnStep=weightInqReinit)
+                                     padding=padding, bias=bias)
             else: 
                 return nn.Conv2d(ni, no, 
                                  kernel_size=kernel_size, stride=stride, 
@@ -53,10 +52,9 @@ class VGG(nn.Module):
         def linear(name, ni, no, bias=False):
             if quantWeights:
                 if weightInqSchedule == None:
-                    return StochasticLinear(*quant_scheme[name], ni, no, bias=bias)
+                    return StochasticLinear(*quant_schemes[name], ni, no, bias=bias)
                 else:
-                    return INQLinear(ni, no, bias=bias, 
-                                     reinitOnStep=weightInqReinit)
+                    return INQLinear(ni, no, bias=bias)
             else: 
                 return nn.Linear(ni, no, bias=bias)
         

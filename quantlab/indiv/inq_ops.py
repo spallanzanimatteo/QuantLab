@@ -3,9 +3,9 @@
 import math
 import torch 
 import torch.nn as nn
-import quantlab.nets as nets
+import quantlab.indiv as indiv
 
-class INQController(nets.Controller):
+class INQController(indiv.Controller):
     def __init__(self, modules, schedule, clearOptimStateOnStep=False):
         super().__init__()
         self.modules = modules

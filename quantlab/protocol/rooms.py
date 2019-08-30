@@ -3,22 +3,21 @@
 
 from progress.bar import FillingSquaresBar
 import torch
-import quantlab.nets as nets
-
+import quantlab.indiv as indiv
 
 def train(logbook, net, device, loss_fn, opt, train_l):
     """Run one epoch of the training experiment."""
-    meter.reset()
-    bar = FillingSquaresBar('Training \t', max=len(trainloader))
-    controllers = nets.Controller.getControllers(net)
-    for i_batch, data in enumerate(trainloader):
+    logbook.meter.reset()
+    bar = FillingSquaresBar('Training \t', max=len(train_l))
+    controllers = indiv.Controller.getControllers(net)
+    for i_batch, data in enumerate(train_l):
         # load data onto device
-        inputs, labels = data
-        inputs         = inputs.to(device)
-        labels         = labels.to(device)
-        # fwdprop
-        outputs        = net(inputs)
-        loss           = loss_fn(outputs, labels)
+        inputs, gt_labels = data
+        inputs            = inputs.to(device)
+        gt_labels         = gt_labels.to(device)
+        # forprop
+        pr_outs           = net(inputs)
+        loss              = loss_fn(pr_outs, gt_labels)
         # update statistics
         logbook.meter.update(pr_outs, gt_labels, loss.item(), track_metric=logbook.track_metric)
         bar.suffix = 'Total: {total:} | ETA: {eta:} | Epoch: {epoch:4d} | ({batch:5d}/{num_batches:5d})'.format(
@@ -45,7 +44,6 @@ def train(logbook, net, device, loss_fn, opt, train_l):
             logbook.writer.add_scalar(k, v, global_step=logbook.i_epoch)
     logbook.writer.add_scalar('learning_rate', opt.param_groups[0]['lr'], global_step=logbook.i_epoch)
     return stats
-
 
 def test(logbook, net, device, loss_fn, test_l, valid=False):
     """Run a validation epoch."""

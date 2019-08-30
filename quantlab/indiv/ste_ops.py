@@ -1,7 +1,7 @@
 # Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 import torch
-import quantlab.nets as nets
+import quantlab.indiv as indiv
 
 
 
@@ -34,7 +34,7 @@ def clampWithGradInwards(x, low, high):
 def STERoundFunctional(x):
     return x - (x - x.round()).detach()
 
-class STEController(nets.Controller):
+class STEController(indiv.Controller):
     def __init__(self, modules):
         super().__init__()
         self.modules = modules

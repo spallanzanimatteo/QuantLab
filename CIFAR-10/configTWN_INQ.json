@@ -1,60 +1,70 @@
 {
-  "architecture": {
-    "class": "VGG",
-    "params": {
-      "quantAct": false, 
-      "quantWeights": true,
-      "weightInqBits": 2, 
-      "weightInqSchedule": {
-           "70": 0.5,
-          "150": 0.75,
-          "190": 0.875,
-          "230": 0.9375,
-          "270": 0.96875,
-          "310": 1.0
-      }
-    }
-  },
-  "thermostat": {
-    "class": "VGG",
-    "params": {
-      "noise_scheme": {},
-      "bindings": []
-    }
-  },
-  "loss_fn": {
+  "description": "randomDescription",
+  "indiv": {
+    "net": {
+        "class": "VGG",
+        "params": {
+        "quantAct": false, 
+        "quantWeights": true,
+        "weightInqBits": 2, 
+        "weightInqSchedule": {
+             "70": 0.5,
+            "150": 0.75,
+            "190": 0.875,
+            "230": 0.9375,
+            "270": 0.96875,
+            "310": 1.0
+        }
+      },
+      "pretrained": null
+    },
+    "loss_function": {
       "class": "HingeLoss",
-    "params": {"num_classes": 10}
-  },
-  "optimizer": {
-    "class": "Adam",
-    "params": {"lr": 1e-3}
-  },
-  "lr_scheduler": {
-    "class": "HandScheduler",
-    "params": {
-      "schedule": {
-        "60": 1e-1,
-        "71": 1.0,
-        "140": 1e-1,
-        "151": 1.0,
-        "180": 1e-1,
-        "191": 1.0,
-        "220": 1e-1,
-        "231": 1.0,
-        "260": 1e-1,
-        "271": 1.0,
-        "300": 1e-1,
-        "311": 1.0,
-        "340": 1e-1,
-        "370": 1e-2
-      }
+      "params": {"num_classes": 10}
     }
   },
-  "max_epoch": 400,
-  "data": {
-    "preprocess": {"augment": true, "valid_fraction": 0.1},
-    "batch_size_train": 256,
-    "batch_size_valid": 64
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings": []
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+        "class": "HandScheduler",
+        "params": {
+          "schedule": {
+            "60": 1e-1,
+            "71": 1.0,
+            "140": 1e-1,
+            "151": 1.0,
+            "180": 1e-1,
+            "191": 1.0,
+            "220": 1e-1,
+            "231": 1.0,
+            "260": 1e-1,
+            "271": 1.0,
+            "300": 1e-1,
+            "311": 1.0,
+            "340": 1e-1,
+            "370": 1e-2
+          }
+        }
+    },
+    "data": {
+      "augment": true,
+      "valid_fraction": 0.1,
+      "bs_train": 256,
+      "bs_valid": 64
+    },
+    "max_epoch": 400
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
   }
 }
