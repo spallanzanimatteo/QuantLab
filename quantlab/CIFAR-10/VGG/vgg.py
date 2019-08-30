@@ -138,12 +138,12 @@ class VGG(nn.Module):
             stats.append(('phi7_fc_w', self.phi7_fc.weight.data))
             stats.append(('phi8_fc_w', self.phi8_fc.weight.data))
             stats.append(('phi9_fc_w', self.phi9_fc.weight.data))
-            return x, stats
+            return stats, x
         return x
 
     def forward_with_tensor_stats(self, x):
-        x, stats = self.forward(x, withStats=True)
-        return x, stats
+        stats, x = self.forward(x, withStats=True)
+        return stats, x
     
 # LOAD NETWORK
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ class MLPBaseline(nn.Module):
         self.phi3_act = nn.ReLU6()
         self.phi4_fc  = nn.Linear(nh, 10)
 
-    def forward(self, x):
+    def forward(self, x, withStats=False):
         x = x.view(-1, 28 * 28)
         x = self.phi1_fc(x)
         x = self.phi1_bn(x)
@@ -54,23 +54,15 @@ class MLPBaseline(nn.Module):
         x = self.phi3_bn(x)
         x = self.phi3_act(x)
         x = self.phi4_fc(x)
+        if withStats:
+            stats = []
+            stats.append(('phi1_fc_w', self.phi1_fc.weight.data))
+            stats.append(('phi2_fc_w', self.phi2_fc.weight.data))
+            stats.append(('phi3_fc_w', self.phi3_fc.weight.data))
+            stats.append(('phi4_fc_w', self.phi4_fc.weight.data))
+            return stats, x
         return x
 
     def forward_with_tensor_stats(self, x):
-        stats = []
-        x = x.view(-1, 28 * 28)
-        x = self.phi1_fc(x)
-        stats.append(('phi1_fc_w', self.phi1_fc.weight.data))
-        x = self.phi1_bn(x)
-        x = self.phi1_act(x)
-        x = self.phi2_fc(x)
-        stats.append(('phi2_fc_w', self.phi2_fc.weight.data))
-        x = self.phi2_bn(x)
-        x = self.phi2_act(x)
-        x = self.phi3_fc(x)
-        stats.append(('phi3_fc_w', self.phi3_fc.weight.data))
-        x = self.phi3_bn(x)
-        x = self.phi3_act(x)
-        x = self.phi4_fc(x)
-        stats.append(('phi4_fc_w', self.phi4_fc.weight.data))
+        stats, x = self.forward(x, withStats=True)
         return stats, x

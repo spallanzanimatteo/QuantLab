@@ -66,9 +66,10 @@ class MLP(nn.Module):
             stats.append(('phi2_fc_w', self.phi2_fc.weight.data))
             stats.append(('phi3_fc_w', self.phi3_fc.weight.data))
             stats.append(('phi4_fc_w', self.phi4_fc.weight.data))
-            return x, stats
+            return stats, x
         else: 
             return x
 
     def forward_with_tensor_stats(self, x):
-        return self.forward(x, withStats=True)
+        stats, x = self.forward(x, withStats=True)
+        return stats, x

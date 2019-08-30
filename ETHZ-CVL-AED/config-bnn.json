@@ -1,0 +1,103 @@
+{
+  "description": "randomDescription",
+  "indiv": {
+    "net": {
+        "class": "MeyerNet",
+        "params": {
+            "capacityFactor": 1.0,
+            "version": 2,
+            "quantized": true,
+            "quantFirstLast": false,
+            "withTwoAct": false,
+            "noTimePooling": false,
+            "quant_scheme": {
+              "phi1_act":  ["uniform", [-1.0, 1.0], [0.0]],
+              "phi2_conv": ["uniform", [-1.0, 1.0], [0.0]],
+              "phi2_act":  ["uniform", [-1.0, 1.0], [0.0]],
+              "phi3_conv": ["uniform", [-1.0, 1.0], [0.0]],
+              "phi3_act":  ["uniform", [-1.0, 1.0], [0.0]],
+              "phi4_conv": ["uniform", [-1.0, 1.0], [0.0]],
+              "phi4_act":  ["uniform", [-1.0, 1.0], [0.0]],
+              "phi5_conv": ["uniform", [-1.0, 1.0], [0.0]],
+              "phi5_act":  ["uniform", [-1.0, 1.0], [0.0]],
+              "phi6_conv": ["uniform", [-1.0, 1.0], [0.0]]
+            }
+        },
+        "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {
+            "phi1_act":  {"stddev_start": [[0.0], [0.5]]},
+            "phi2_conv": {"stddev_start": [[0.0], [0.5]]},
+            "phi2_act":  {"stddev_start": [[0.0], [0.5]]},
+            "phi3_conv": {"stddev_start": [[0.0], [0.5]]},
+            "phi3_act":  {"stddev_start": [[0.0], [0.5]]},
+            "phi4_conv": {"stddev_start": [[0.0], [0.5]]},
+            "phi4_act":  {"stddev_start": [[0.0], [0.5]]},
+            "phi5_conv": {"stddev_start": [[0.0], [0.5]]},
+            "phi5_act":  {"stddev_start": [[0.0], [0.5]]},
+            "phi6_conv": {"stddev_start": [[0.0], [0.5]]}        
+        },
+        "bindings": [
+            {
+              "maps":     ["phi1"],
+              "forward":  {"class": "Constant", "params": {}},
+              "backward": {"class": "Constant", "params": {}}
+            },
+            {
+              "maps":     ["phi2"],
+              "forward":  {"class": "Constant", "params": {}},
+              "backward": {"class": "Constant", "params": {}}
+            },
+            {
+              "maps":     ["phi3"],
+              "forward":  {"class": "Constant", "params": {}},
+              "backward": {"class": "Constant", "params": {}}
+            },
+            {
+              "maps":     ["phi4"],
+              "forward":  {"class": "Constant", "params": {}},
+              "backward": {"class": "Constant", "params": {}}
+            },
+            {
+              "maps":     ["phi5"],
+              "forward":  {"class": "Constant", "params": {}},
+              "backward": {"class": "Constant", "params": {}}
+            },
+            {
+              "maps":     ["phi6"],
+              "forward":  {"class": "Constant", "params": {}},
+              "backward": {"class": "Constant", "params": {}}
+            }        
+        ]
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-2}
+    },
+    "lr_scheduler": {
+        "class": "ReduceLROnPlateau",
+        "step_metric": "train_metric",
+        "params": {}
+    },
+    "data": {
+      "augment": false,
+      "valid_fraction": 0.1,
+      "bs_train": 128,
+      "bs_valid": 64
+    },
+    "max_epoch": 1000
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
+  }
+}

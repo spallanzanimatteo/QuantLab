@@ -1,0 +1,47 @@
+{
+  "description": "randomDescription",
+  "indiv": {
+    "net": {
+        "class": "MeyerNet",
+        "params": {
+            "capacityFactor": 1.0,
+            "version": 2,
+            "quantized": false,
+            "noTimePooling": false
+        },
+        "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings": []
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+        "class": "ReduceLROnPlateau",
+        "step_metric": "train_metric",
+        "params": {}
+    },
+    "data": {
+      "augment": false,
+      "valid_fraction": 0.1,
+      "bs_train": 128,
+      "bs_valid": 64
+    },
+    "max_epoch": 1000
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
+  }
+}
