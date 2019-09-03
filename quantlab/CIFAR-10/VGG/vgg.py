@@ -124,7 +124,8 @@ class VGG(nn.Module):
         x = self.phi6_mp(x)
         x = self.phi6_bn(x)
         x = self.phi6_act(x)
-        x = x.reshape(-1, torch.Tensor(list(x.size()[-3:])).to(torch.int32).prod().item())
+#        x = x.reshape(-1, torch.Tensor(list(x.size()[-3:])).to(torch.int32).prod().item())
+        x = x.reshape(x.size(0), -1)
         x = self.phi7_fc(x)
         x = self.phi7_bn(x)
         x = self.phi7_act(x)
@@ -150,13 +151,32 @@ class VGG(nn.Module):
     
 # LOAD NETWORK
 if __name__ == '__main__':
-    model = VGG(quantAct=False, quantWeights=True, weightInqSchedule={'1': 1.0})
+    model = VGG(quantAct=False, quantWeights=True, 
+                weightInqSchedule={'1': 1.0}, quantSkipFirstLayer=True)
 #    path = '../../../CIFAR-10/logs/exp048/saves/epoch1050.ckpt'
-    path = '../../../CIFAR-10/logs/exp057/saves/epoch0900.ckpt'
-#    path = '../../../CIFAR-10/logs/exp066/saves/best.ckpt'
-    state_dicts = torch.load(path, 
-                             map_location='cpu')
+#    path = '../../../CIFAR-10/logs/exp057/saves/epoch0900.ckpt'
+#    path = '../../../CIFAR-10/logs/exp066/saves/epoch1150.ckpt'
+    path = '../../../CIFAR-10/logs/exp069/saves/epoch0100.ckpt'
+    state_dicts = torch.load(path, map_location='cpu')
     model.load_state_dict(state_dicts['indiv']['net'])
     print('non-quant values, layer 3: %8d' % (
             torch.isnan(model.phi3_conv.weightFrozen).sum(dtype=torch.long).item()))
     print('total values, layer 3:     %8d' % (model.phi3_conv.weightFrozen.numel()))
+    
+    #########################################################
+    # verification: no information in non-quantized weights
+    #########################################################
+    verification = False
+    if verification:
+        quantModules = INQController.getInqModules(model)
+        
+        #check proper quantization levels
+        from matplotlib import pyplot as plt
+        plt.hist(quantModules[4].weightFrozen.detach().flatten().numpy(), bins=30)
+        
+        #remove non-quantized information for test run
+        for m in quantModules:
+            m.weight.data.zero_()
+        state_dicts['indiv']['net'] = model.state_dict()
+        torch.save(state_dicts, path.replace('.ckpt', '_verify.ckpt'))
+    

@@ -1,4 +1,4 @@
-exp000: full-precision, lr=1e-3, lrSchedule (cyclic)                   -->  6.36%
+exp000: full-precision, lr=1e-3, lrSchedule (cyclic)                   -->  6.40%
 
 exp010: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule
 exp011: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule (longer )
@@ -13,22 +13,31 @@ exp020: TAN, lr=1e-3, lrSchedule                                       -->  8.48
 exp030: TNN, act STE, wght STE, lrSchedule                             -->  9.96%
 exp031: TNN, act STE, wght INQ 2-bit                                   -->  9.70%
 
-exp040: magn-SRQ, 1st layer non-quant                                  -->  6.97%
-exp041: exp040 + 90% all the time (from start)                         --> incomplete, converges ok
+exp040: magn-SRQ, quantAll, ramp-up, repartition every 100ep           --> incomplete (to 90% only), looking good (6.94%)
+exp041: magn-SRQ, quantAll, ramp-up, repartition every 100ep, to full  -->  8.95% (last step too hard, 7.95%@95%)
+exp042: magn-SRQ, quantAll, 90% quant always, repart. all 100ep        --> incomplete (90% only), far too slow
+
+also added smooth transition between samplings (i.e. keeping full-prec weights underneath)!!!
+exp066: magn-SRQ, quantAll, warm-up 150 ep., ramp-up, repart. all 1ep  -->  6.97%
+exp067: magn-SRQ, quantAll, warm-up  20 ep., ramp-up, repart. all 1ep  -->  7.43%
+
+exp069: faster ramp-up, added features (graph, inq/fraction), skip 1st -->  6.56%
+
+exp070: exp069 pretr., super-fast schedule, 0.1x LR than exp069
+exp071: exp069 pretr., super-fast schedule, same LR than exp069
+exp072: exp069 pretr., crazy-fast schedule, same LR than exp069
 
 
-exp049: magn-SRQ, quantAll, ramp-up, repartition every 100ep           --> incomplete (to 90% only), looking good (6.94%)
-exp050: magn-SRQ, quantAll, ramp-up, repartition every 100ep, to full  --> 8.95% (last step too hard, 7.95%@95%)
-exp052: magn-SRQ, quantAll, 90% quant always, repart. all 100ep        --> incomplete (90% only), looking ok
-
-
-exp0XXXXX: magn-SRQ, quantAll, 90% quant always, repart. all 1ep (!)      --> incomplete (90% only), looking great (6.36%@90%)
 
 
 
-
-
-
+Could also be combined with STE (bad idea, right?!)
+Re-add skipping quantization of the last layer!!!
+Also: rethink initial transition?!
+Also: rethink label smoothing by trained teacher network
+Also: re-extension to BNNs?
+dLAC-style loss function
+BWN/BNN instead of TWN/TNN?
 
 summary:
 - normal full-prec: 6.4%
@@ -36,7 +45,8 @@ summary:
 
 
 
-
+tensorboard filters: 
+- CIFAR-10/logs/exp0([3-8]|0)
 
 
 

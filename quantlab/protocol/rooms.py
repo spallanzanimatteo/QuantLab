@@ -11,13 +11,16 @@ def train(logbook, net, device, loss_fn, opt, train_l):
     bar = FillingSquaresBar('Training \t', max=len(train_l))
     controllers = indiv.Controller.getControllers(net)
     for i_batch, data in enumerate(train_l):
+        
         # load data onto device
         inputs, gt_labels = data
         inputs            = inputs.to(device)
         gt_labels         = gt_labels.to(device)
+        
         # forprop
         pr_outs           = net(inputs)
         loss              = loss_fn(pr_outs, gt_labels)
+        
         # update statistics
         logbook.meter.update(pr_outs, gt_labels, loss.item(), track_metric=logbook.track_metric)
         bar.suffix = 'Total: {total:} | ETA: {eta:} | Epoch: {epoch:4d} | ({batch:5d}/{num_batches:5d})'.format(
@@ -28,12 +31,13 @@ def train(logbook, net, device, loss_fn, opt, train_l):
                 num_batches=len(train_l))
         bar.suffix = bar.suffix + logbook.meter.bar()
         bar.next()
+        
         # backprop
         opt.zero_grad()
         loss.backward()
         opt.step()
     for ctrlr in controllers:
-        ctrlr.step(logbook.i_epoch, opt)
+        ctrlr.step(logbook.i_epoch, opt, tensorboardWriter=logbook.writer)
     bar.finish()
     stats = {
         'train_loss':   logbook.meter.avg_loss,
@@ -53,13 +57,20 @@ def test(logbook, net, device, loss_fn, test_l, valid=False):
     bar       = FillingSquaresBar(bar_title, max=len(test_l))
     with torch.no_grad():
         for i_batch, data in enumerate(test_l):
+            
             # load data onto device
             inputs, gt_labels     = data
             inputs                = inputs.to(device)
             gt_labels             = gt_labels.to(device)
+            
             # forprop
             tensor_stats, pr_outs = net.forward_with_tensor_stats(inputs)
             loss                  = loss_fn(pr_outs, gt_labels)
+            
+            #add graph to tensorboard
+#            if logbook.i_epoch == 1 and i_batch == 0:
+#                logbook.writer.add_graph(net, inputs)
+            
             # update statistics
             logbook.meter.update(pr_outs, gt_labels, loss.item(), track_metric=True)
             bar.suffix = 'Total: {total:} | ETA: {eta:} | Epoch: {epoch:4d} | ({batch:5d}/{num_batches:5d})'.format(

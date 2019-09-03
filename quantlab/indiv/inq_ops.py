@@ -12,10 +12,10 @@ class INQController(indiv.Controller):
         schedule = {int(k): v for k, v in schedule.items()} #parse string keys to ints
         self.schedule = schedule # dictionary mapping epoch to fraction
         self.clearOptimStateOnStep = clearOptimStateOnStep
-        self.fraction = None
+        self.fraction = 0.0
         self.stepEveryEpoch = stepEveryEpoch
         
-    def step(self, epoch, optimizer=None):
+    def step(self, epoch, optimizer=None, tensorboardWriter=None):
         
         if epoch in self.schedule.keys():
             self.fraction = self.schedule[epoch]
@@ -23,6 +23,11 @@ class INQController(indiv.Controller):
             pass
         else:
             return
+        
+        #log to tensorboard
+        if tensorboardWriter != None:
+            tensorboardWriter.add_scalar('INQ/fraction', 
+                                         self.fraction, global_step=epoch)
         
         #step each INQ module
         for m in self.modules: 
@@ -39,7 +44,7 @@ class INQController(indiv.Controller):
 
 def inqStep(fracNew, fracOld, numBits, strategy, s, weight, weightFrozen):
     
-    if fracOld == 0.0:
+    if fracOld == 0.0 and math.isnan(s): #TODO: add or fractOld == None
         #init n_1, n_2 now that we know the weight range
         s = torch.max(torch.abs(weight)).item()
         

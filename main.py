@@ -29,21 +29,26 @@ train_l, valid_l, test_l            = get_data(logbook)
 # run experiment
 if args.mode == 'train':
     for _ in range(logbook.i_epoch + 1, logbook.config['treat']['max_epoch'] + 1):
+        
         logbook.start_epoch()
         thr.step()
+        
         # train
         net.train()
         train_stats = train(logbook, net_maybe_par, device, loss_fn, opt, train_l)
+        
         # validate
         net.eval()
         valid_stats = test(logbook, net, device, loss_fn, valid_l, valid=True)
         stats = {**train_stats, **valid_stats}
+        
         # update learning rate
         if 'metrics' in lr_sched.step.__code__.co_varnames:
             lr_sched_metric = stats[logbook.config['treat']['lr_scheduler']['step_metric']]
             lr_sched.step(lr_sched_metric)
         else:
             lr_sched.step()
+            
         # save model if update metric has improved...
         if logbook.is_better(stats):
             ckpt = {'indiv': {'net': net.state_dict()},
@@ -55,6 +60,7 @@ if args.mode == 'train':
                     },
                     'protocol': {'metrics': logbook.metrics}}
             logbook.store_checkpoint(ckpt, is_best=True)
+            
         # ...and/or if checkpoint epoch
         is_ckpt_epoch = (logbook.i_epoch % int(args.ckpt_every)) == 0
         if is_ckpt_epoch:
@@ -67,6 +73,7 @@ if args.mode == 'train':
                     },
                     'protocol': {'metrics': logbook.metrics}}
             logbook.store_checkpoint(ckpt)
+            
 elif args.mode == 'test':
     # test
     net.eval()

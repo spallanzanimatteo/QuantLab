@@ -6,17 +6,17 @@
         "params": {
         "quantAct": false, 
         "quantWeights": true,
+        "quantSkipFirstLayer": true,
         "weightInqBits": 2, 
         "weightInqStrategy": "magnitude-SRQ", 
         "stepEveryEpoch": true,
         "weightInqSchedule": {
-           "20": 0.8,
-          "150": 0.9,
-          "300": 0.95,
-          "450": 0.975,
-          "600": 0.9875,
-          "750": 0.99375,
-          "900": 1.0
+          "100": 0.9,
+          "150": 0.95,
+          "200": 0.975,
+          "250": 0.9875,
+          "320": 0.99375,
+          "400": 1.0
         }
       },
       "pretrained": null
@@ -41,22 +41,10 @@
         "class": "HandScheduler",
         "params": {
           "schedule": {
-              "151": 1.0,
-              "301": 1.0,
-              "451": 1.0,
-              "601": 1.0,
-              "751": 1.0,
-              "901": 1.0,
-    
-              "100": 0.1,
-              "250": 0.1,
-              "400": 0.1,
-              "550": 0.1,
-              "700": 0.1,
-              "850": 0.1,
-             "1000": 0.1,
-    
-             "1100": 0.01
+              "75": 0.1,
+              "101": 1.0,
+              "370": 0.1,
+              "420": 0.01
           }
         }
     },
@@ -66,7 +54,7 @@
       "bs_train": 256,
       "bs_valid": 64
     },
-    "max_epoch": 1200
+    "max_epoch": 450
   },
   "protocol": {
     "update_metric": "valid_metric",
