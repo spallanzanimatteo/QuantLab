@@ -30,7 +30,7 @@ import torch.nn as nn
 
 class MobileNetv2Baseline(nn.Module):
     """MobileNetv2 Convolutional Neural Network."""
-    def __init__(self, capacity, expansion):
+    def __init__(self, capacity=1, expansion=6):
         super().__init__()
         c0 = 3
         t0 = int(32 * capacity) * 1
@@ -378,10 +378,10 @@ class MobileNetv2Baseline(nn.Module):
         
         if withStats:
             stats = []
-            return x, stats
+            return stats, x
 
         return x
 
     def forward_with_tensor_stats(self, x):
-        x, stats = self.forward(x, withStats=True)
-        return x, stats
+        stats, x = self.forward(x, withStats=True)
+        return stats, x

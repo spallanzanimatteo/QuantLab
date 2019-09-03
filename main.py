@@ -56,7 +56,7 @@ if args.mode == 'train':
                     'protocol': {'metrics': logbook.metrics}}
             logbook.store_checkpoint(ckpt, is_best=True)
         # ...and/or if checkpoint epoch
-        is_ckpt_epoch = (logbook.i_epoch % args.ckpt_every) == 0
+        is_ckpt_epoch = (logbook.i_epoch % int(args.ckpt_every)) == 0
         if is_ckpt_epoch:
             ckpt = {'indiv': {'net': net.state_dict()},
                     'treat': {

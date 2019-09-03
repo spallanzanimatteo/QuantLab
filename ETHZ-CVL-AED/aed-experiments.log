@@ -1,0 +1,21 @@
+exp00: baseline, adam, lr=1e-3, reduceOnPlateau
+exp01: exp00 + capacityfactor=0.5
+exp02: exp00 + capacityfactor=0.75
+exp03: exp00 + version=2 (first level to 32 channels)
+exp04: exp00 + version=3 (v2 + dropout)
+
+exp05: quantized/bnn, version=2
+exp06: exp05 + stddev=1.0 (instead of 0.5)
+
+exp07: quantized/bnn, version=2, quantizeFirstLast=false (BUG: quantized acts of 2nd-to-last), stddev=0.5
+exp08: exp07 + double-activation
+exp09: exp07 + v2 without bug
+exp10: exp09 + lr=1e-2 (from 1e-3)
+
+[removed] Many tries to move the max pooling in temporal direction behind the loss. No success (at all).
+
+exp20: best float setup yet -- factor=1, version=2, lr=1e-3, opt=adam, lrSched=plateau(train_metric), loss=crossEntr, batchsz=128
+exp21: best quant/bnn setup yet -- 
+
+exp22: data augmentation: shift inputs by 0, 5, 10, 15, ... 95 samples before applying MFCC
+

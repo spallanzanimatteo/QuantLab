@@ -4,13 +4,19 @@
 import math
 import torch.nn as nn
 
-from quantlab.indiv.stochastic_ops import StochasticActivation, StochasticConv2d
+from quantlab.indiv.stochastic_ops import StochasticActivation, StochasticLinear, StochasticConv2d
+from quantlab.indiv.inq_ops import INQController, INQLinear, INQConv2d
+from quantlab.indiv.ste_ops import STEActivation
 
-from quantlab.ImageNet.MobileNetv2.mobilenetv2residuals import MobileNetV2Baseline
+from quantlab.ImageNet.MobileNetv2.mobilenetv2baseline import MobileNetv2Baseline
 
-class MobileNetv2Residuals(MobileNetV2Baseline):
+class MobileNetv2Residuals(MobileNetv2Baseline):
     """MobileNetv2 Convolutional Neural Network."""
-    def __init__(self, capacity, expansion, quant_schemes):
+    def __init__(self, capacity=1, expansion=6, quant_schemes=None, 
+                 quantAct=True, quantActSTENumLevels=None, quantWeights=True, 
+                 weightInqSchedule=None, weightInqBits=2, weightInqStrategy="magnitude", 
+                 quantSkipFirstLayer=False):
+        
         super().__init__(capacity, expansion)
         c0 = 3
         t0 = int(32 * capacity) * 1
@@ -28,6 +34,47 @@ class MobileNetv2Residuals(MobileNetV2Baseline):
         t6 = c6 * expansion
         c7 = int(320 * capacity)
         c8 = max(int(1280 * capacity), 1280)
+        
+        
+        def activ(name, nc):
+            if quantAct:
+                if quantActSTENumLevels != None and quantActSTENumLevels > 0: 
+                    return STEActivation(startEpoch=0, 
+                                         numLevels=quantActSTENumLevels)
+                else:
+                    return StochasticActivation(*quant_schemes[name], nc)
+            else: 
+                assert(quantActSTENumLevels == None or quantActSTENumLevels <= 0)
+                return nn.ReLU(inplace=True)
+            
+        def conv2d(name, ni, no, kernel_size=3, stride=1, padding=1, bias=False):
+            if quantWeights:
+                if weightInqSchedule == None:
+                    return StochasticConv2d(*quant_schemes[name], ni, no, 
+                                            kernel_size=kernel_size, stride=stride, 
+                                            padding=padding, bias=bias)
+                else:
+                    return INQConv2d(ni, no, 
+                                     kernel_size=kernel_size, stride=stride, 
+                                     padding=padding, bias=bias, 
+                                     numBits=weightInqBits, strategy=weightInqStrategy)
+            else: 
+                return nn.Conv2d(ni, no, 
+                                 kernel_size=kernel_size, stride=stride, 
+                                 padding=padding, bias=bias)
+            
+        def linear(name, ni, no, bias=False):
+            if quantWeights:
+                if weightInqSchedule == None:
+                    return StochasticLinear(*quant_schemes[name], ni, no, bias=bias)
+                else:
+                    return INQLinear(ni, no, bias=bias, 
+                                     numBits=weightInqBits, strategy=weightInqStrategy)
+            else: 
+                return nn.Linear(ni, no, bias=bias)
+            
+        assert(False) # IMPLEMENTATION INCOMPLETE!!!!
+            
         # first block
         self.phi01_conv = nn.Conv2d(c0, t0, kernel_size=3, stride=2, padding=1, bias=False)
         self.phi01_bn   = nn.BatchNorm2d(t0)

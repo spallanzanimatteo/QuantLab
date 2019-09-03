@@ -12,8 +12,8 @@ class VGG(nn.Module):
     """Quantizable VGG."""
     def __init__(self, capacity=1, quant_schemes=None, 
                  quantAct=True, quantActSTENumLevels=None, quantWeights=True, 
-                 weightInqSchedule=None, weightInqBits=2, 
-                 quantSkipFirstLayer=False):
+                 weightInqSchedule=None, weightInqBits=2, weightInqStrategy="magnitude", 
+                 quantSkipFirstLayer=False, stepEveryEpoch=False):
         
         super().__init__()
         
@@ -43,7 +43,8 @@ class VGG(nn.Module):
                 else:
                     return INQConv2d(ni, no, 
                                      kernel_size=kernel_size, stride=stride, 
-                                     padding=padding, bias=bias)
+                                     padding=padding, bias=bias, 
+                                     numBits=weightInqBits, strategy=weightInqStrategy)
             else: 
                 return nn.Conv2d(ni, no, 
                                  kernel_size=kernel_size, stride=stride, 
@@ -54,7 +55,8 @@ class VGG(nn.Module):
                 if weightInqSchedule == None:
                     return StochasticLinear(*quant_schemes[name], ni, no, bias=bias)
                 else:
-                    return INQLinear(ni, no, bias=bias)
+                    return INQLinear(ni, no, bias=bias, 
+                                     numBits=weightInqBits, strategy=weightInqStrategy)
             else: 
                 return nn.Linear(ni, no, bias=bias)
         
@@ -97,7 +99,8 @@ class VGG(nn.Module):
         if weightInqSchedule != None: 
             self.inqController = INQController(INQController.getInqModules(self), 
                                                weightInqSchedule, 
-                                               clearOptimStateOnStep=True)
+                                               clearOptimStateOnStep=True, 
+                                               stepEveryEpoch=stepEveryEpoch)
 
     def forward(self, x, withStats=False):
         x = self.phi1_conv(x)
@@ -148,5 +151,12 @@ class VGG(nn.Module):
 # LOAD NETWORK
 if __name__ == '__main__':
     model = VGG(quantAct=False, quantWeights=True, weightInqSchedule={'1': 1.0})
-    state_dicts = torch.load('../../CIFAR10/log/exp21/save/epoch0200.ckpt', map_location='cpu')
-    model.load_state_dict(state_dicts['net'])
+#    path = '../../../CIFAR-10/logs/exp048/saves/epoch1050.ckpt'
+    path = '../../../CIFAR-10/logs/exp057/saves/epoch0900.ckpt'
+#    path = '../../../CIFAR-10/logs/exp066/saves/best.ckpt'
+    state_dicts = torch.load(path, 
+                             map_location='cpu')
+    model.load_state_dict(state_dicts['indiv']['net'])
+    print('non-quant values, layer 3: %8d' % (
+            torch.isnan(model.phi3_conv.weightFrozen).sum(dtype=torch.long).item()))
+    print('total values, layer 3:     %8d' % (model.phi3_conv.weightFrozen.numel()))

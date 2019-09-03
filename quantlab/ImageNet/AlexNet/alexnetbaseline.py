@@ -105,9 +105,9 @@ class AlexNetBaseline(nn.Module):
             stats.append(('phi6_fc_w', self.phi6_fc.weight.data))
             stats.append(('phi7_fc_w', self.phi7_fc.weight.data))
             stats.append(('phi8_fc_w', self.phi8_fc.weight.data))
-            return x, stats
+            return stats, x
         return x
 
     def forward_with_tensor_stats(self, x):
-        x, stats = self.forward(x, withStats=True)
-        return x, stats
+        stats, x = self.forward(x, withStats=True)
+        return stats, x

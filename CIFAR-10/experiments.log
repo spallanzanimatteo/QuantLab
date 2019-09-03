@@ -1,0 +1,50 @@
+exp000: full-precision, lr=1e-3, lrSchedule (cyclic)                   -->  6.36%
+
+exp010: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule
+exp011: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule (longer )
+exp012: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule (even longer)    -->  8.10%
+exp013: exp012 + reinitWeightsOnStep                                   --> goes to shit (>30%) / too slow
+exp014: exp012 + no quantization for layer 1                           -->  7.25%
+exp015: INQ, fixed LR, INQ schedule w/ cont. exp. decay                -->  8.03%
+exp016: exp014 + CrossEntropyLoss instead of custom HingeLoss           --> incomplete
+
+exp020: TAN, lr=1e-3, lrSchedule                                       -->  8.48%
+
+exp030: TNN, act STE, wght STE, lrSchedule                             -->  9.96%
+exp031: TNN, act STE, wght INQ 2-bit                                   -->  9.70%
+
+exp040: magn-SRQ, 1st layer non-quant                                  -->  6.97%
+exp041: exp040 + 90% all the time (from start)                         --> incomplete, converges ok
+
+
+exp049: magn-SRQ, quantAll, ramp-up, repartition every 100ep           --> incomplete (to 90% only), looking good (6.94%)
+exp050: magn-SRQ, quantAll, ramp-up, repartition every 100ep, to full  --> 8.95% (last step too hard, 7.95%@95%)
+exp052: magn-SRQ, quantAll, 90% quant always, repart. all 100ep        --> incomplete (90% only), looking ok
+
+
+exp0XXXXX: magn-SRQ, quantAll, 90% quant always, repart. all 1ep (!)      --> incomplete (90% only), looking great (6.36%@90%)
+
+
+
+
+
+
+
+summary:
+- normal full-prec: 6.4%
+- normal INQ: 7.3%
+
+
+
+
+
+
+
+grouped weights annealing?!?! or even just otherwise a smoother transition....
+higher learning rates after partial quantization?!?!
+loss function of dLAC for max capacity (or transfer learning with smoothened ground truth)
+
+
+partition-wise retraining
+INQ controller
+dLAC loss: only gradients when needed (use capacity better?!)
