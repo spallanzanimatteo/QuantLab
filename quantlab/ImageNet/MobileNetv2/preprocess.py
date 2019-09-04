@@ -120,18 +120,27 @@ class Lighting(object):
 
 
 def get_transforms(augment):
-    train_t = Compose([RandomResizedCrop(224),
-                       RandomHorizontalFlip(),
-                       ToTensor(),
-                       ColorJitter(),
-                       Lighting(_ImageNet['PCA']),
-                       Normalize(**_ImageNet['Normalize'])])
     valid_t = Compose([Resize(256),
                        CenterCrop(224),
                        ToTensor(),
                        Normalize(**_ImageNet['Normalize'])])
-    if not augment:
+    if augment == False:
         train_t = valid_t
+    elif augment == True:
+        train_t = Compose([RandomResizedCrop(224),
+                           RandomHorizontalFlip(),
+                           ToTensor(),
+                           ColorJitter(),
+                           Lighting(_ImageNet['PCA']),
+                           Normalize(**_ImageNet['Normalize'])])
+    elif augment == "torchvision": 
+        train_t = Compose([RandomResizedCrop(224),
+                           RandomHorizontalFlip(),
+                           ToTensor(),
+                           Normalize(**_ImageNet['Normalize'])])
+    else:
+        assert(False)
+        
     transforms = {
         'training':   train_t,
         'validation': valid_t

@@ -15,7 +15,7 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
     def __init__(self, capacity=1, expansion=6, quant_schemes=None, 
                  quantWeights=True, quantAct=True,
                  weightInqSchedule=None, weightInqBits=2, weightInqStrategy="magnitude", 
-                 quantSkipFirstLayer=False, quantSkipLastLayer=False):
+                 quantSkipFirstLayer=False, quantSkipLastLayer=False, pretrained=False):
         
         super().__init__(capacity, expansion)
         c0 = 3
@@ -50,8 +50,8 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
                                  padding=padding, groups=groups, bias=bias)
         
         def activ():
-#            return nn.ReLU6(inplace=True)
-            return nn.ReLU(inplace=True)
+            return nn.ReLU6(inplace=True)
+#            return nn.ReLU(inplace=True)
             
 #        assert(False) # IMPLEMENTATION INCOMPLETE!!!!
             
@@ -222,6 +222,9 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
 
         self._initialize_weights()
         
+        if pretrained: 
+            self.loadPretrainedTorchVision()
+        
         if weightInqSchedule != None: 
             self.inqController = INQController(INQController.getInqModules(self), 
                                                weightInqSchedule, 
@@ -241,3 +244,82 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
             elif isinstance(m, nn.Linear) or isinstance(m, INQLinear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
+
+    def loadPretrainedTorchVision(self):
+        import torchvision as tv
+        modelRef = tv.models.mobilenet_v2(pretrained=True)
+        stateDictRef = modelRef.state_dict()
+        remapping = {'features.0.0': 'phi01_conv',
+                     'features.0.1': 'phi01_bn',
+                     'features.1.conv.0.0': 'phi02_conv',
+                     'features.1.conv.0.1': 'phi02_bn',
+                     'features.1.conv.1': 'phi03_conv',
+                     'features.1.conv.2': 'phi03_bn',
+                     }
+                     
+        for i, layerBlock in enumerate(range(2,17+1)):
+            offset = 3*i + 4
+            rExt = {'features.%d.conv.0.0' % (layerBlock,) : 'phi%02d_conv' % (offset+0,),
+                    'features.%d.conv.0.1' % (layerBlock,) : 'phi%02d_bn'   % (offset+0,),
+                    'features.%d.conv.1.0' % (layerBlock,) : 'phi%02d_conv' % (offset+1,),
+                    'features.%d.conv.1.1' % (layerBlock,) : 'phi%02d_bn'   % (offset+1,),
+                    'features.%d.conv.2'   % (layerBlock,) : 'phi%02d_conv' % (offset+2,),
+                    'features.%d.conv.3'   % (layerBlock,) : 'phi%02d_bn'   % (offset+2,),
+                    }
+            remapping.update(rExt)
+        rExt = {'features.18.0': 'phi52_conv', 
+                'features.18.1': 'phi52_bn',
+                'classifier.1':  'phi53_fc'
+                }
+        remapping.update(rExt)
+        
+        stateDictRefMapped = {ksd.replace(kremap, vremap): vsd 
+                              for ksd, vsd in stateDictRef.items()
+                              for kremap, vremap in remapping.items()
+                              if ksd.startswith(kremap)}
+        
+        missingFields = {k: v 
+                         for k,v in self.state_dict().items() 
+                         if k not in stateDictRefMapped}
+        assert(len([k 
+                    for k in missingFields.keys()
+                    if not (k.endswith('.sParam') or 
+                            k.endswith('.weightFrozen'))
+                    ]) == 0) # assert only INQ-specific fields missing
+        
+        stateDictRefMapped.update(missingFields)
+        self.load_state_dict(stateDictRefMapped, strict=True)
+    
+    
+    
+if __name__ == '__main__':
+    model = MobileNetv2QuantWeight(quantAct=False, quantWeights=True, 
+                 weightInqSchedule={}, weightInqBits=2, 
+                 weightInqStrategy="magnitude-SRQ", 
+                 quantSkipFirstLayer=True,
+                 quantSkipLastLayer=True, 
+                 pretrained=True)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

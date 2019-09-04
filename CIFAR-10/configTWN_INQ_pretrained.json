@@ -8,16 +8,16 @@
         "quantWeights": true,
         "quantSkipFirstLayer": true,
         "weightInqBits": 2, 
-        "weightInqStrategy": "magnitude-SRQ", 
+        "weightInqStrategy": "magnitude-SRQ-perBatch", 
         "stepEveryEpoch": true,
         "weightInqSchedule": {
           "0": 0.9,
           "1": 0.9,
-          "10": 0.95,
-          "15": 0.975,
-          "20": 0.9875,
-          "25": 0.99375,
-          "35": 1.0
+          "20": 0.95,
+          "30": 0.975,
+          "40": 0.9875,
+          "50": 0.99375,
+          "70": 1.0
         }
       },
       "pretrained": {
@@ -47,8 +47,8 @@
         "class": "HandScheduler",
         "params": {
           "schedule": {
-              "30": 0.1,
-              "45": 0.01
+              "60": 0.1,
+              "80": 0.01
           }
         }
     },
@@ -58,7 +58,7 @@
       "bs_train": 256,
       "bs_valid": 64
     },
-    "max_epoch": 50
+    "max_epoch": 90
   },
   "protocol": {
     "update_metric": "valid_metric",

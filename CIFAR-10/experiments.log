@@ -6,9 +6,10 @@ exp012: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule (even longer)    -->  8.10
 exp013: exp012 + reinitWeightsOnStep                                   --> goes to shit (>30%) / too slow
 exp014: exp012 + no quantization for layer 1                           -->  7.25%
 exp015: INQ, fixed LR, INQ schedule w/ cont. exp. decay                -->  8.03%
-exp016: exp014 + CrossEntropyLoss instead of custom HingeLoss           --> incomplete
+exp016: exp014 + CrossEntropyLoss instead of custom HingeLoss          --> incomplete
 
-exp020: TAN, lr=1e-3, lrSchedule                                       -->  8.48%
+exp020: TAN, lr=1e-3, lrSchedule, ANA                                  -->  8.48%
+exp021: TAN, lr=1e-3, lrSchedule, STEcust                              -->  8.70%
 
 exp030: TNN, act STE, wght STE, lrSchedule                             -->  9.96%
 exp031: TNN, act STE, wght INQ 2-bit                                   -->  9.70%
@@ -23,13 +24,21 @@ exp067: magn-SRQ, quantAll, warm-up  20 ep., ramp-up, repart. all 1ep  -->  7.43
 
 exp069: faster ramp-up, added features (graph, inq/fraction), skip 1st -->  6.56%
 
-exp070: exp069 pretr., super-fast schedule, 0.1x LR than exp069
-exp071: exp069 pretr., super-fast schedule, same LR than exp069
-exp072: exp069 pretr., crazy-fast schedule, same LR than exp069
+exp070: exp069 pretr., super-fast schedule, 0.1x LR than exp069        -->  6.90%
+exp071: exp069 pretr., super-fast schedule, same LR than exp069        -->  6.70%
+exp072: exp069 pretr., crazy-fast schedule, same LR than exp069        -->  6.90%
+exp073: exp069 pretr., super-fast schedule, same LR than exp069, numBit=3   6.48%
+
+exp076: exp021 pretr.->STEcust+SRQ  --> 9.00%
+
+exp078: + per-batch SRQ (slow due to frequent quantization!)
 
 
 
 
+
+
+per-batch?
 
 Could also be combined with STE (bad idea, right?!)
 Re-add skipping quantization of the last layer!!!

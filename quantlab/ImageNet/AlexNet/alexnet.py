@@ -146,3 +146,41 @@ class AlexNet(nn.Module):
     def forward_with_tensor_stats(self, x):
         stats, x = self.forward(x, withStats=True)
         return stats, x
+
+
+
+
+if __name__ == '__main__':
+    model = AlexNet(quantAct=False, quantWeights=True, 
+                 weightInqSchedule={}, weightInqBits=2, 
+                 weightInqStrategy="magnitude-SRQ", 
+                 quantSkipFirstLayer=True)
+    
+    import torchvision as tv
+    modelRef = tv.models.alexnet(pretrained=True)
+    stateDictRef = modelRef.state_dict()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+

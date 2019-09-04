@@ -1,47 +1,58 @@
 {
-  "architecture": {
-    "class": "VGG",
-    "params": {
-      "capacity": 1,
-      "quantAct": true, 
-      "quantActSTENumLevels": 3, 
-      "quantWeights": false,
-      "quant_scheme": {
-      }
-    }
-  },
-  "thermostat": {
-    "class": "VGG",
-    "params": {
-      "noise_scheme": {
+  "description": "randomDescription",
+  "indiv": {
+    "net": {
+        "class": "VGG",
+        "params": {
+        "quantAct": true, 
+        "quantActSTENumLevels": 3, 
+        "quantWeights": true,
+        "quantSkipFirstLayer": true,
+        "weightInqBits": 2, 
+        "weightInqStrategy": "magnitude-SRQ", 
+        "stepEveryEpoch": true,
+        "weightInqSchedule": {
+        }
       },
-      "bindings": [
-      ]
+      "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
     }
   },
-  "loss_fn": {
-      "class": "HingeLoss",
-    "params": {"num_classes": 10}
-  },
-  "optimizer": {
-    "class": "Adam",
-    "params": {"lr": 1e-3}
-  },
-  "lr_scheduler": {
-    "class": "HandScheduler",
-    "params": {
-      "schedule": {
-        "150": 0.1,
-        "180": 1.0,
-        "210": 0.1,
-        "240": 0.01
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings": []
       }
-    }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+        "class": "HandScheduler",
+        "params": {
+          "schedule": {
+            "150": 0.1,
+            "180": 1.0,
+            "210": 0.1,
+            "240": 0.01
+          }
+        }
+    },
+    "data": {
+      "augment": true,
+      "valid_fraction": 0.1,
+      "bs_train": 256,
+      "bs_valid": 64
+    },
+    "max_epoch": 400
   },
-  "max_epoch": 400,
-  "data": {
-    "preprocess": {"augment": true, "valid_fraction": 0.1},
-    "batch_size_train": 256,
-    "batch_size_valid": 64
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
   }
 }
