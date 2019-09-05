@@ -84,7 +84,7 @@ class INQParameterController:
     
     def getWeightParams(self, module):
         weight = module.__getattr__(self.parameterName)
-        weightFrozen = module.__getattr__(self.parameterName)
+        weightFrozen = module.__getattr__(self.pnameFrozen)
         return weight, weightFrozen
     
     @property
@@ -126,7 +126,11 @@ class INQParameterController:
     def inqStep(self, fraction):
         
         if self.fraction == 0.0 and math.isnan(self.s):
-            self.s = torch.max(torch.abs(self.weight.data)).item()
+            experimental = False#True
+            if experimental:
+                self.s = 2*self.weight.data.abs().median().item()
+            else:
+                self.s = torch.max(torch.abs(self.weight.data)).item()
         self.fraction = fraction
             
         #compute quantization levels
@@ -138,7 +142,7 @@ class INQParameterController:
             quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
         else: 
             assert(self.numBits == 1)
-            quantLevels = [2**n_2, -2**n_2]
+            quantLevels = [self.s/2, -self.s/2]#[2**n_2, -2**n_2]
         
         if self.strategy == "magnitude-SRQ":# or self.strategy == "magnitude-SRQ-perBatch":
             if self.fraction == None:

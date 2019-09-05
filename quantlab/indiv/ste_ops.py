@@ -55,7 +55,8 @@ class STEActivation(torch.nn.Module):
         super().__init__()
         self.startEpoch = startEpoch
         self.started = startEpoch <= 0
-        assert(numLevels % 2 == 1 and numLevels >= 3)
+#        assert(numLevels % 2 == 1 and numLevels >= 3)
+        assert(numLevels >= 2)
         self.numLevels = numLevels
         self.passGradsWhenClamped = passGradsWhenClamped
 #        self.absMaxValue = torch.nn.Parameter(torch.zeros(1), 
@@ -66,7 +67,6 @@ class STEActivation(torch.nn.Module):
 #            self.absMaxValue.data[0] = x.abs().max()
             
         if self.started:
-            factorLevels = (self.numLevels // 2)
 #            factor = 1/self.absMaxValue.item() * (self.numLevels // 2)
 #            xclamp = clampWithGrad(x, -1, 1)
             if self.passGradsWhenClamped:
@@ -74,7 +74,13 @@ class STEActivation(torch.nn.Module):
                 xclamp = clampWithGradInwards(x, -1, 1)
             else:
                 xclamp = x.clamp(-1, 1)
-            y = STERoundFunctional(xclamp*factorLevels)/factorLevels
+            
+            y = xclamp
+            y = (y + 1)/2 # map from [-1,1] to [0,1]
+            y = STERoundFunctional(y*(self.numLevels - 1))/(self.numLevels - 1)
+            y = 2*y - 1
+#            factorLevels = (self.numLevels // 2)
+#            y = STERoundFunctional(xclamp*factorLevels)/factorLevels
         else:
             y = x
         return y

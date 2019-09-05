@@ -5,7 +5,7 @@
         "class": "VGG",
         "params": {
         "quantAct": true, 
-        "quantActSTENumLevels": 3, 
+        "quantActSTENumLevels": 2, 
         "quantWeights": true,
         "quantSkipFirstLayer": true,
         "weightInqBits": 2, 
@@ -30,7 +30,7 @@
     },
     "optimizer": {
       "class": "Adam",
-      "params": {"lr": 1e-3}
+      "params": {"lr": 1e-5}
     },
     "lr_scheduler": {
         "class": "HandScheduler",

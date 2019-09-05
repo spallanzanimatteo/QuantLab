@@ -1,41 +1,57 @@
 {
-  "architecture": {
-    "class": "VGG",
-    "params": {
-      "quantAct": false, 
-      "quantWeights": false
+  "description": "randomDescription",
+  "indiv": {
+    "net": {
+        "class": "VGG",
+        "params": {
+        "quantAct": false, 
+        "quantWeights": true,
+        "quantSkipFirstLayer": true,
+        "weightInqBits": 2, 
+        "weightInqStrategy": "magnitude-SRQ", 
+        "stepEveryEpoch": true,
+        "weightInqSchedule": {
+        }
+      },
+      "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
     }
   },
-  "thermostat": {
-    "class": "VGG",
-    "params": {
-      "noise_scheme": {},
-      "bindings": []
-    }
-  },
-  "loss_fn": {
-      "class": "HingeLoss",
-    "params": {"num_classes": 10}
-  },
-  "optimizer": {
-    "class": "Adam",
-    "params": {"lr": 1e-3}
-  },
-  "lr_scheduler": {
-    "class": "HandScheduler",
-    "params": {
-      "schedule": {
-        "60": 1e-1,
-        "80": 1.0,
-        "100": 1e-1,
-        "120": 1e-2
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings": []
       }
-    }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-3}
+    },
+    "lr_scheduler": {
+        "class": "HandScheduler",
+        "params": {
+          "schedule": {
+            "60": 1e-1,
+            "80": 1.0,
+            "100": 1e-1,
+            "120": 1e-2
+          }
+        }
+    },
+    "data": {
+      "augment": true,
+      "valid_fraction": 0.1,
+      "bs_train": 256,
+      "bs_valid": 64
+    },
+    "max_epoch": 200
   },
-  "max_epoch": 200,
-  "data": {
-    "preprocess": {"augment": true, "valid_fraction": 0.1},
-    "batch_size_train": 256,
-    "batch_size_valid": 64
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
   }
 }

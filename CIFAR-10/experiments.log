@@ -33,16 +33,19 @@ exp076: exp021 pretr.->STEcust+SRQ  --> 9.00%
 
 exp078: + per-batch SRQ (slow due to frequent quantization!)
 
+079 : BUG!!
+exp080: exp021 + BAN instead of TAN; new STEcust impl.
+exp083: exp071 + BWN instead of TWN
+exp084: exp071 + BWN instead of TWN, quant to s/2
+exp085: exp071 + BWN instead of TWN, quant to s/2; s=2*median(abs(w))
+exp087: full-precision, lr=1e-3, lrSchedule (cyclic)
+exp089: exp071 + BWN instead of TWN + 10x LR                           -->  7.58%
+exp090: exp071 + BWN instead of TWN + first 5 eps at 10x LR            -->  6.82%
+#!!!! experiments 085 failes, because s is already determined, also exp084 affected !!!!
 
-
-
-
-
-per-batch?
 
 Could also be combined with STE (bad idea, right?!)
-Re-add skipping quantization of the last layer!!!
-Also: rethink initial transition?!
+Also: rethink initial transition?! smoother?
 Also: rethink label smoothing by trained teacher network
 Also: re-extension to BNNs?
 dLAC-style loss function

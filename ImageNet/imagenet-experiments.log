@@ -2,6 +2,7 @@
 
 exp008: AlexNet, full precision, LR scheduler, ...
 
+exp018: MobileNetV2, RSQ, 2-bit, torchvision-pretr.
 
 
 

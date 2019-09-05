@@ -156,7 +156,8 @@ if __name__ == '__main__':
 #    path = '../../../CIFAR-10/logs/exp048/saves/epoch1050.ckpt'
 #    path = '../../../CIFAR-10/logs/exp057/saves/epoch0900.ckpt'
 #    path = '../../../CIFAR-10/logs/exp066/saves/epoch1150.ckpt'
-    path = '../../../CIFAR-10/logs/exp069/saves/epoch0100.ckpt'
+#    path = '../../../CIFAR-10/logs/exp069/saves/epoch0100.ckpt'
+    path = '../../../CIFAR-10/logs/exp090/saves/best.ckpt'
     state_dicts = torch.load(path, map_location='cpu')
     model.load_state_dict(state_dicts['indiv']['net'])
     print('non-quant values, layer 3: %8d' % (

@@ -7,8 +7,8 @@
         "quantAct": false, 
         "quantWeights": true,
         "quantSkipFirstLayer": true,
-        "weightInqBits": 2, 
-        "weightInqStrategy": "magnitude-SRQ-perBatch", 
+        "weightInqBits": 1, 
+        "weightInqStrategy": "magnitude-SRQ", 
         "stepEveryEpoch": true,
         "weightInqSchedule": {
           "0": 0.9,
@@ -41,14 +41,15 @@
     },
     "optimizer": {
       "class": "Adam",
-      "params": {"lr": 1e-3}
+      "params": {"lr": 1e-2}
     },
     "lr_scheduler": {
         "class": "HandScheduler",
         "params": {
           "schedule": {
-              "60": 0.1,
-              "80": 0.01
+              "5": 0.1,
+              "60": 0.01,
+              "80": 0.001
           }
         }
     },
