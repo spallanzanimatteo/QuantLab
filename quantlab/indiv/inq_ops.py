@@ -40,67 +40,147 @@ class INQController(indiv.Controller):
                 
     @staticmethod
     def getInqModules(net):
-        return [m for m in net.modules() if isinstance(m, INQLinear) or isinstance(m, INQConv2d) or isinstance(m, INQConv1d)]
-    
-    
-#class INQLayer(object):
-#    def __init__():
-#        pass
-    
+        return [m 
+                for m in net.modules() 
+                if (isinstance(m, INQLinear) or isinstance(m, INQConv1d) or 
+                    isinstance(m, INQConv2d))]
 
-def inqStep(fracNew, fracOld, numBits, strategy, s, weight, weightFrozen):
     
-    if fracOld == 0.0 and math.isnan(s): #TODO: add or fractOld == None
-        #init n_1, n_2 now that we know the weight range
-        s = torch.max(torch.abs(weight)).item()
+class INQParameterController:
+    def __init__(self, module, parameterName, numBits=2, strategy="magnitude", backCompat=True):
         
-    #compute quantization levels
-    n_1 = math.floor(math.log((4*s)/3, 2))
-    n_2 = int(n_1 + 2 - (2**(numBits-1)))
-    quantLevelsPos = (2**i for i in range(n_2, n_1+1))
-    quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
-    quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
-    
-    if strategy == "magnitude-SRQ" or strategy == "magnitude-SRQ-perBatch":
-        if fracNew == None:
-            return fracNew, s
+        self.module = module
+        self.parameterName = parameterName
+        self.backCompat = backCompat
         
-        #get current weights quantized
-        weightFrozen.copy_(inqQuantize(weight, quantLevels))
-        numUnFreeze = int((1-fracNew)*weight.numel())
-        idxsUnFreeze = torch.randperm(weight.numel())[:numUnFreeze]
-        weightFrozen.flatten()[idxsUnFreeze] = float('NaN')
-    
-    else:
-         #keep track of quantized fraction to save time
-#        if fracNew == fracOld:
-#            return # would crash anyway....
+        self.numBits = numBits
+        self.strategy = strategy # "magnitude" or "random" or "magnitude-SRQ"
+        self.fraction = 0.0
         
-        #get number of weights to quantize
-        prevCount = weightFrozen.numel() - torch.isnan(weightFrozen).sum(dtype=torch.long).item()
-        newCount = int(fracNew*weightFrozen.numel())
-        
-        #find indexes of weights to quant
-        if strategy == "magnitude":
-            weight[~torch.isnan(weightFrozen)].fill_(0)
-            _, idxsSorted = weight.flatten().abs().sort(descending=True)
-        elif strategy == "random":
-            idxsSorted = torch.randperm(weight.numel())
+        if self.backCompat:
+            assert(parameterName == 'weight')
+            assert(not hasattr(module, 'weightFrozen'))
+            assert(not hasattr(module, 'sParam'))
+            self.pnameFrozen = 'weightFrozen'
+            self.pnameS = 'sParam'
         else:
-            assert(False)
-        idxsFreeze = idxsSorted[:newCount-prevCount]
+            #more structured; adds support for multiple indep. INQ parameters
+            self.pnameFrozen = parameterName + '_inqFrozen'
+            self.pnameS = parameterName + '_inqS'
+            
+#        module.register_parameter(pnameFrozen, 
+#                                  nn.Parameter(torch.full_like(self.weight, float('NaN')), 
+#                                               requires_grad=False))
+#        module.register_parameter(pnameS, 
+#                                  nn.Parameter(torch.full((1,), float('NaN')), 
+#                                               requires_grad=False))
+            
+        module.__setattr__(self.pnameFrozen, 
+                           nn.Parameter(torch.full_like(self.weight, float('NaN')), 
+                                        requires_grad=False))
+        module.__setattr__(self.pnameS, 
+                           nn.Parameter(torch.full((1,), float('NaN')).to(self.weight), 
+                                        requires_grad=False))
+    
+    def getWeightParams(self, module):
+        weight = module.__getattr__(self.parameterName)
+        weightFrozen = module.__getattr__(self.parameterName)
+        return weight, weightFrozen
+    
+    @property
+    def weight(self):
+        return self.module.__getattr__(self.parameterName)
+    
+    @property
+    def weightFrozen(self):
+        return self.module.__getattr__(self.pnameFrozen)
+    
+    @property
+    def sParam(self):
+        return self.module.__getattr__(self.pnameS)
+    
+    @property
+    def s(self):
+        return self.sParam.item()
+    @s.setter
+    def s(self, value):
+        self.sParam[0] = value
         
-        #quantize the weights at these indexes
-        weightFrozen.flatten()[idxsFreeze] = inqQuantize(weight.flatten()[idxsFreeze], quantLevels)
+    @staticmethod
+    def inqQuantize(weight, quantLevels):
+        """Quantize a single weight using the INQ quantization scheme."""
         
-    return fracNew, s
-
-def inqAssembleWeight(weight, weightFrozen):
-    weightFrozen = weightFrozen.detach()
-    frozen = ~torch.isnan(weightFrozen)
-    weightAssembled = torch.zeros_like(weightFrozen)
-    weightAssembled[frozen] = weightFrozen[frozen]
-    return weightAssembled + torch.isnan(weightFrozen).float()*weight
+        bestQuantLevel = torch.zeros_like(weight)
+        minQuantError = torch.full_like(weight, float('inf'))
+        
+        for ql in quantLevels:
+            qerr = (weight-ql).abs()
+            mask = qerr < minQuantError
+            bestQuantLevel[mask] = ql
+            minQuantError[mask] = qerr[mask]
+        
+        quantizedWeight = bestQuantLevel
+        
+        return quantizedWeight
+    
+    def inqStep(self, fraction):
+        
+        if self.fraction == 0.0 and math.isnan(self.s):
+            self.s = torch.max(torch.abs(self.weight.data)).item()
+        self.fraction = fraction
+            
+        #compute quantization levels
+        n_1 = math.floor(math.log((4*self.s)/3, 2))
+        n_2 = int(n_1 + 2 - (2**(self.numBits-1)))
+        if self.numBits >= 2:
+            quantLevelsPos = (2**i for i in range(n_2, n_1+1))
+            quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
+            quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
+        else: 
+            assert(self.numBits == 1)
+            quantLevels = [2**n_2, -2**n_2]
+        
+        if self.strategy == "magnitude-SRQ":# or self.strategy == "magnitude-SRQ-perBatch":
+            if self.fraction == None:
+                return
+            
+            #get current weights quantized
+            self.weightFrozen.data.copy_(self.inqQuantize(self.weight.data, quantLevels))
+            numUnFreeze = int((1-self.fraction)*self.weight.numel())
+            idxsUnFreeze = torch.randperm(self.weight.numel())[:numUnFreeze]
+            self.weightFrozen.data.flatten()[idxsUnFreeze] = float('NaN')
+        
+        else:
+            #get number of weights to quantize
+            prevCount = self.weightFrozen.numel() - torch.isnan(self.weightFrozen.data).sum(dtype=torch.long).item()
+            newCount = int(self.fraction*self.weightFrozen.numel())
+            
+            #find indexes of weights to quant
+            if self.strategy == "magnitude":
+                self.weight.data[~torch.isnan(self.weightFrozen.data)].fill_(0)
+                _, idxsSorted = self.weight.data.flatten().abs().sort(descending=True)
+            elif self.strategy == "random":
+                idxsSorted = torch.randperm(self.weight.numel())
+            else:
+                assert(False)
+            idxsFreeze = idxsSorted[:newCount-prevCount]
+            
+            #quantize the weights at these indexes
+            self.weightFrozen.data.flatten()[idxsFreeze] = self.inqQuantize(self.weight.data.flatten()[idxsFreeze], quantLevels)
+    
+    def inqAssembleWeight(self, module=None):
+        
+        #with nn.DataParallel, the module is copied, so self.module is wrong
+        weight, weightFrozen = self.getWeightParams(module)
+        
+        weightFrozen = weightFrozen.detach()
+        frozen = ~torch.isnan(weightFrozen)
+        weightAssembled = torch.zeros_like(weightFrozen)
+        weightAssembled[frozen] = weightFrozen[frozen]
+        fullPrecSelector = torch.isnan(weightFrozen).float()
+        tmp = fullPrecSelector*weight
+        weightAssembled = weightAssembled + tmp
+        return weightAssembled
 
 
 class INQLinear(nn.Linear):
@@ -108,33 +188,13 @@ class INQLinear(nn.Linear):
                  numBits=2, strategy="magnitude"):
         
         super().__init__(in_features, out_features, bias)
-        
-        # set INQ parameters
-        self.numBits = numBits
-        self.strategy = strategy # "magnitude" or "random" or "magnitude-SRQ"
-        self.fraction = 0.0
-        self.weightFrozen = nn.Parameter(torch.full_like(self.weight, float('NaN')), 
-                                         requires_grad=False)
-        self.sParam = nn.Parameter(torch.full((1,), float('NaN')), 
-                                   requires_grad=False)
-    
-    @property    
-    def s(self):
-        return self.sParam.item()
-    @s.setter
-    def s(self, value):
-        self.sParam[0] = value
+        self.weightInqCtrl = INQParameterController(self, 'weight', numBits, strategy)
     
     def step(self, fraction):
-        self.fraction, self.s = inqStep(fraction, self.fraction, 
-                                        self.numBits, self.strategy, self.s, 
-                                        self.weight.data, 
-                                        self.weightFrozen.data)
+        self.weightInqCtrl.inqStep(fraction)
 
     def forward(self, input):
-        if self.strategy == "magnitude-SRQ-perBatch":
-            self.step(self.fraction)
-        weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
+        weightAssembled = self.weightInqCtrl.inqAssembleWeight(self)
         return nn.functional.linear(input, weightAssembled, self.bias)
     
     
@@ -148,32 +208,13 @@ class INQConv1d(nn.Conv1d):
                  stride, padding, dilation, groups, 
                  bias, padding_mode)
         
-        # set INQ parameters
-        self.numBits = numBits
-        self.strategy = strategy
-        self.fraction = 0.0
-        weightFrozen = torch.full_like(self.weight, float('NaN'), requires_grad=False)
-        self.weightFrozen = nn.Parameter(weightFrozen)
-        self.sParam = nn.Parameter(torch.full((1,), float('NaN')), requires_grad=False)
-    
-    @property    
-    def s(self):
-        return self.sParam.item()
-    @s.setter
-    def s(self, value):
-        self.sParam[0] = value
+        self.weightInqCtrl = INQParameterController(self, 'weight', numBits, strategy)
         
     def step(self, fraction):
-        self.fraction, self.s = inqStep(fraction, self.fraction, 
-                                        self.numBits, self.strategy, self.s, 
-                                        self.weight.data, 
-                                        self.weightFrozen.data)
+        self.weightInqCtrl.inqStep(fraction)
 
     def forward(self, input):
-        if self.strategy == "magnitude-SRQ-perBatch":
-            self.step(self.fraction)
-            
-        weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
+        weightAssembled = self.weightInqCtrl.inqAssembleWeight(self)
         
         if self.padding_mode == 'circular':
             expanded_padding = ((self.padding[0] + 1) // 2, self.padding[0] // 2)
@@ -195,32 +236,15 @@ class INQConv2d(nn.Conv2d):
                  stride, padding, dilation, groups, 
                  bias, padding_mode)
         
-        # set INQ parameters
-        self.numBits = numBits
-        self.strategy = strategy
-        self.fraction = 0.0
-        weightFrozen = torch.full_like(self.weight, float('NaN'), requires_grad=False)
-        self.weightFrozen = nn.Parameter(weightFrozen)
-        self.sParam = nn.Parameter(torch.full((1,), float('NaN')), requires_grad=False)
-    
-    @property    
-    def s(self):
-        return self.sParam.item()
-    @s.setter
-    def s(self, value):
-        self.sParam[0] = value
+        self.weightInqCtrl = INQParameterController(self, 'weight', numBits, strategy)
         
     def step(self, fraction):
-        self.fraction, self.s = inqStep(fraction, self.fraction, 
-                                        self.numBits, self.strategy, self.s, 
-                                        self.weight.data, 
-                                        self.weightFrozen.data)
+        self.weightInqCtrl.inqStep(fraction)
 
     def forward(self, input):
-        if self.strategy == "magnitude-SRQ-perBatch":
-            self.step(self.fraction)
-            
-        weightAssembled = inqAssembleWeight(self.weight, self.weightFrozen)
+#        if self.strategy == "magnitude-SRQ-perBatch":
+#            self.step(self.fraction)
+        weightAssembled = self.weightInqCtrl.inqAssembleWeight(self)
         
         if self.padding_mode == 'circular':
             expanded_padding = ((self.padding[1] + 1) // 2, self.padding[1] // 2,
@@ -228,29 +252,10 @@ class INQConv2d(nn.Conv2d):
             return nn.functional.conv2d(nn.functional.pad(input, expanded_padding, mode='circular'),
                                         weightAssembled, self.bias, self.stride,
                                         (0,), self.dilation, self.groups)
+
         return nn.functional.conv2d(input, weightAssembled, self.bias, self.stride,
                                     self.padding, self.dilation, self.groups)
-
-
-def inqQuantize(weight, quantLevels):
-    """Quantize a single weight using the INQ quantization scheme."""
-    
-#    quantLevelsPos = (2**i for i in range(n_2, n_1+1))
-#    quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
-#    quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
-    
-    bestQuantLevel = torch.zeros_like(weight)
-    minQuantError = torch.full_like(weight, float('inf'))
-    
-    for ql in quantLevels:
-        qerr = (weight-ql).abs()
-        mask = qerr < minQuantError
-        bestQuantLevel[mask] = ql
-        minQuantError[mask] = qerr[mask]
-    
-    quantizedWeight = bestQuantLevel
-    
-    return quantizedWeight
+        
 
 if __name__ == '__main__':
     x = torch.linspace(-2,2,100)
@@ -263,7 +268,7 @@ if __name__ == '__main__':
     quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
     quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
     
-    x_q = inqQuantize(x, quantLevels)
+    x_q = INQParameterController.inqQuantize(x, quantLevels)
     
     
     import matplotlib.pyplot as plt
