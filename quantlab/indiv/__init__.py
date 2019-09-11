@@ -4,6 +4,15 @@ class Controller(object):
     def __init__(self):
         pass
     
+    def step(self, epoch, optimizer=None, tensorboardWriter=None):
+        pass
+        
+    def step_preTraining(self, *args, **kwargs):
+        self.step(*args, **kwargs)
+        
+    def step_preValidation(self, *args, **kwargs):
+        pass
+    
     @staticmethod
     def getControllers(net):
         return [v for m in net.modules() 
