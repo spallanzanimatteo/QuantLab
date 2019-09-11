@@ -7,6 +7,9 @@ import torch.nn as nn
 import quantlab.indiv as indiv
 
 class INQController(indiv.Controller):
+    """Instantiate typically once per network, provide it with a list of INQ 
+    modules to control and a INQ schedule, and insert a call to the step 
+    function once per epoch. """
     def __init__(self, modules, schedule, clearOptimStateOnStep=False, stepEveryEpoch=False):
         super().__init__()
         self.modules = modules
@@ -16,7 +19,7 @@ class INQController(indiv.Controller):
         self.fraction = 0.0
         self.stepEveryEpoch = stepEveryEpoch
         
-    def step(self, epoch, optimizer=None, tensorboardWriter=None):
+    def step_preTraining(self, epoch, optimizer=None, tensorboardWriter=None):
         
         if epoch in self.schedule.keys():
             self.fraction = self.schedule[epoch]
@@ -47,6 +50,8 @@ class INQController(indiv.Controller):
 
     
 class INQParameterController:
+    """Used to implement INQ functionality within a custom layer (e.g. INQConv2d).
+    Creates and register all relevant fields and parameters in the module. """
     def __init__(self, module, parameterName, numBits=2, strategy="magnitude", backCompat=True):
         
         self.module = module
