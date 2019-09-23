@@ -6,11 +6,14 @@ import torch
 import torch.nn as nn
 import quantlab.indiv as indiv
 
+
+
 class INQController(indiv.Controller):
     """Instantiate typically once per network, provide it with a list of INQ 
     modules to control and a INQ schedule, and insert a call to the step 
     function once per epoch. """
-    def __init__(self, modules, schedule, clearOptimStateOnStep=False, stepEveryEpoch=False):
+    def __init__(self, modules, schedule, clearOptimStateOnStep=False, 
+                 stepEveryEpoch=False, rescaleWeights=False):
         super().__init__()
         self.modules = modules
         schedule = {int(k): v for k, v in schedule.items()} #parse string keys to ints
@@ -18,6 +21,7 @@ class INQController(indiv.Controller):
         self.clearOptimStateOnStep = clearOptimStateOnStep
         self.fraction = 0.0
         self.stepEveryEpoch = stepEveryEpoch
+        self.rescaleWeights = rescaleWeights
         
     def step_preTraining(self, epoch, optimizer=None, tensorboardWriter=None):
         
@@ -40,7 +44,14 @@ class INQController(indiv.Controller):
         #clear optimizer state (e.g. Adam's momentum)
         if self.clearOptimStateOnStep and optimizer != None:
             optimizer.state.clear()
-                
+               
+    def step_postOptimStep(self, *args, **kwargs):
+        if self.rescaleWeights:
+            #print('rescaling')
+            for m in self.modules:
+                m.weightInqCtrl.rescaleWeights()
+#                m.weight.data.mul_(0.5/m.weight.data.abs().mean().item())
+    
     @staticmethod
     def getInqModules(net):
         return [m 
@@ -52,15 +63,19 @@ class INQController(indiv.Controller):
 class INQParameterController:
     """Used to implement INQ functionality within a custom layer (e.g. INQConv2d).
     Creates and register all relevant fields and parameters in the module. """
-    def __init__(self, module, parameterName, numBits=2, strategy="magnitude", backCompat=True):
+    def __init__(self, module, parameterName, numLevels=3, 
+                 strategy="magnitude", backCompat=True, 
+                 quantInitMethod=None):#'uniform-l1opt'
+#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         
         self.module = module
         self.parameterName = parameterName
         self.backCompat = backCompat
         
-        self.numBits = numBits
+        self.numLevels = numLevels
         self.strategy = strategy # "magnitude" or "random" or "magnitude-SRQ"
         self.fraction = 0.0
+        self.quantInitMethod = quantInitMethod
         
         if self.backCompat:
             assert(parameterName == 'weight')
@@ -125,29 +140,90 @@ class INQParameterController:
             minQuantError[mask] = qerr[mask]
         
         quantizedWeight = bestQuantLevel
-        
         return quantizedWeight
     
     def inqStep(self, fraction):
         
-        if self.fraction == 0.0 and math.isnan(self.s):
-            experimental = False#True
-            if experimental:
-                self.s = 2*self.weight.data.abs().median().item()
-            else:
+        
+        if self.quantInitMethod == None:
+            #update s
+            if self.fraction == 0.0 and math.isnan(self.s):
                 self.s = torch.max(torch.abs(self.weight.data)).item()
-        self.fraction = fraction
             
-        #compute quantization levels
-        n_1 = math.floor(math.log((4*self.s)/3, 2))
-        n_2 = int(n_1 + 2 - (2**(self.numBits-1)))
-        if self.numBits >= 2:
-            quantLevelsPos = (2**i for i in range(n_2, n_1+1))
-            quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
-            quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
-        else: 
-            assert(self.numBits == 1)
-            quantLevels = [self.s/2, -self.s/2]#[2**n_2, -2**n_2]
+            #compute quantization levels
+            n_1 = math.floor(math.log((4*self.s)/3, 2))
+            n_2 = int(n_1 + 2 - (self.numLevels // 2))
+            if self.numLevels >= 3:
+                quantLevelsPos = (2**i for i in range(n_2, n_1+1))
+                quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
+                quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
+            else: 
+                assert(self.numLevels == 2)
+                quantLevels = [self.s/2, -self.s/2]#[2**n_2, -2**n_2]
+                
+        elif self.quantInitMethod in ['uniform-l1opt', 
+                                      'uniform-l2opt', 
+                                      'uniform-perCh-l2opt', 
+                                      'uniform-linfopt']:
+#            import numpy
+#            getQLs = lambda s: numpy.linspace(-s, s, num=self.numLevels).tolist()
+            getQLs = lambda s: torch.linspace(-s, s, steps=self.numLevels)
+            if self.fraction == 0.0 and math.isnan(self.s):
+                import scipy.optimize
+                def optimWeight(weight):
+                    def loss(s):
+                        s = s.item()
+                        qls = getQLs(s)
+                        for i, ql in enumerate(qls):
+                            tmp = (weight-ql).abs()
+                            if i == 0:
+                                minQuantErr = tmp
+                            else:
+                                minQuantErr = torch.min(minQuantErr, tmp)
+                        if self.quantInitMethod == 'uniform-l1opt':
+                            return minQuantErr.norm(p=1).item()
+                        elif self.quantInitMethod in ['uniform-l2opt', 'uniform-perCh-l2opt']:
+                            return minQuantErr.norm(p=2).item()
+                        elif self.quantInitMethod == 'uniform-linfopt':
+                            return minQuantErr.norm(p=float('inf')).item()
+                        else:
+                            assert(False)
+                    bounds = (1e-6, weight.abs().max().item())
+                    optRes = scipy.optimize.brute(loss, ranges=(bounds,), 
+                                                  Ns=1000, disp=True, 
+                                                  finish=scipy.optimize.fmin)
+                    s = optRes[0]
+                    weight.mul_(1/s)
+                    s = 1 
+                    return s
+                
+                if self.quantInitMethod in ['uniform-l1opt', 
+                                            'uniform-l2opt', 
+                                            'uniform-linfopt']:
+                    self.s = optimWeight(self.weight.data.flatten().detach())
+                elif self.quantInitMethod in ['uniform-perCh-l2opt']:
+                    self.s = 1
+                    for c in range(self.weight.size(0)):
+                        optimWeight(self.weight.data[c].flatten().detach())
+            quantLevels = getQLs(self.s)
+        else:
+            assert(False)
+        self.fraction = fraction
+
+#        if self.fraction == 0.0 and math.isnan(self.s):
+#                self.s = torch.max(torch.abs(self.weight.data)).item()
+#        self.fraction = fraction
+            
+#        #compute quantization levels
+#        n_1 = math.floor(math.log((4*self.s)/3, 2))
+#        n_2 = int(n_1 + 2 - (self.numLevels // 2))
+#        if self.numLevels >= 3:
+#            quantLevelsPos = (2**i for i in range(n_2, n_1+1))
+#            quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
+#            quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
+#        else: 
+#            assert(self.numLevels == 2)
+#            quantLevels = [self.s/2, -self.s/2]#[2**n_2, -2**n_2]
         
         if self.strategy == "magnitude-SRQ":# or self.strategy == "magnitude-SRQ-perBatch":
             if self.fraction == None:
@@ -179,7 +255,7 @@ class INQParameterController:
     
     def inqAssembleWeight(self, module=None):
         
-        #with nn.DataParallel, the module is copied, so self.module is wrong
+        #with nn.DataParallel, the module is copied, so self.module cannot be used
         weight, weightFrozen = self.getWeightParams(module)
         
         weightFrozen = weightFrozen.detach()
@@ -190,14 +266,19 @@ class INQParameterController:
         tmp = fullPrecSelector*weight
         weightAssembled = weightAssembled + tmp
         return weightAssembled
+    
+    def rescaleWeights(self):
+        self.weight.data.mul_((self.s/2)/self.weight.data.abs().mean().item())
 
 
 class INQLinear(nn.Linear):
     def __init__(self, in_features, out_features, bias=True, 
-                 numBits=2, strategy="magnitude"):
+                 numLevels=3, strategy="magnitude", quantInitMethod=None):
         
         super().__init__(in_features, out_features, bias)
-        self.weightInqCtrl = INQParameterController(self, 'weight', numBits, strategy)
+        self.weightInqCtrl = INQParameterController(self, 'weight', 
+                                                    numLevels, strategy,
+                                                    quantInitMethod=quantInitMethod)
     
     def step(self, fraction):
         self.weightInqCtrl.inqStep(fraction)
@@ -211,13 +292,15 @@ class INQConv1d(nn.Conv1d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
                  bias=True, padding_mode='zeros', 
-                 numBits=2, strategy="magnitude"):
+                 numLevels=3, strategy="magnitude", quantInitMethod=None):
         
         super().__init__(in_channels, out_channels, kernel_size, 
                  stride, padding, dilation, groups, 
                  bias, padding_mode)
         
-        self.weightInqCtrl = INQParameterController(self, 'weight', numBits, strategy)
+        self.weightInqCtrl = INQParameterController(self, 'weight', 
+                                                    numLevels, strategy,
+                                                    quantInitMethod=quantInitMethod)
         
     def step(self, fraction):
         self.weightInqCtrl.inqStep(fraction)
@@ -239,13 +322,15 @@ class INQConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
                  bias=True, padding_mode='zeros', 
-                 numBits=2, strategy="magnitude"):
+                 numLevels=3, strategy="magnitude", quantInitMethod=None):
         
         super().__init__(in_channels, out_channels, kernel_size, 
                  stride, padding, dilation, groups, 
                  bias, padding_mode)
         
-        self.weightInqCtrl = INQParameterController(self, 'weight', numBits, strategy)
+        self.weightInqCtrl = INQParameterController(self, 'weight', 
+                                                    numLevels, strategy,
+                                                    quantInitMethod=quantInitMethod)
         
     def step(self, fraction):
         self.weightInqCtrl.inqStep(fraction)
@@ -264,15 +349,14 @@ class INQConv2d(nn.Conv2d):
 
         return nn.functional.conv2d(input, weightAssembled, self.bias, self.stride,
                                     self.padding, self.dilation, self.groups)
-        
 
 if __name__ == '__main__':
     x = torch.linspace(-2,2,100)
-    numBits = 2
+    numLevels = 3
     s = torch.max(torch.abs(x)).item()
     
     n_1 = math.floor(math.log((4*s)/3, 2))
-    n_2 = int(n_1 + 2 - (2**(numBits-1)))
+    n_2 = int(n_1 + 2 - (numLevels//2))
     quantLevelsPos = (2**i for i in range(n_2, n_1+1))
     quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
     quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
@@ -287,7 +371,7 @@ if __name__ == '__main__':
 
 
     model = INQLinear(2, 3, bias=False, 
-                      numBits=2, strategy="magnitude-SRQ")
+                      numLevels=numLevels, strategy="magnitude-SRQ")
 #    model = INQConv2d(1, 2, kernel_size=3, bias=False, 
 #                      numBits=2, strategy="magnitude-SRQ")
 

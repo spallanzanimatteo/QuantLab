@@ -13,18 +13,23 @@ class AlexNet(nn.Module):
     """Quantized AlexNet (both weights and activations)."""
     def __init__(self, capacity=1, quant_schemes=None, 
                  quantAct=True, quantActSTENumLevels=None, quantWeights=True, 
-                 weightInqSchedule=None, weightInqBits=2, weightInqStrategy="magnitude", 
-                 quantSkipFirstLayer=False):
+                 weightInqSchedule=None, weightInqBits=None, weightInqLevels=None, 
+                 weightInqStrategy="magnitude", 
+                 quantSkipFirstLayer=False, quantSkipLastLayer=False, 
+                 withDropout=False, alternateSizes=False, weightInqQuantInit=None):
         
         super().__init__()
-        c0 = 3
-        c1 = int(64 * capacity)
-        c2 = int(64 * 3 * capacity)
-        c3 = int(64 * 6 * capacity)
-        c4 = int(64 * 4 * capacity)
-        c5 = 256
-        nh = 4096
         
+        assert(weightInqBits == None or weightInqLevels == None)
+        if weightInqBits != None:
+            print('warning: weightInqBits deprecated')
+            if weightInqBits == 1:
+                weightInqLevels = 2
+            elif weightInqBits >= 2:
+                weightInqLevels = 2**weightInqBits
+            else:
+                assert(False)
+                
         def activ(name, nc):
             if quantAct:
                 if quantActSTENumLevels != None and quantActSTENumLevels > 0: 
@@ -46,7 +51,9 @@ class AlexNet(nn.Module):
                     return INQConv2d(ni, no, 
                                      kernel_size=kernel_size, stride=stride, 
                                      padding=padding, bias=bias, 
-                                     numBits=weightInqBits, strategy=weightInqStrategy)
+                                     numLevels=weightInqLevels, 
+                                     strategy=weightInqStrategy, 
+                                     quantInitMethod=weightInqQuantInit)
             else: 
                 return nn.Conv2d(ni, no, 
                                  kernel_size=kernel_size, stride=stride, 
@@ -58,10 +65,36 @@ class AlexNet(nn.Module):
                     return StochasticLinear(*quant_schemes[name], ni, no, bias=bias)
                 else:
                     return INQLinear(ni, no, bias=bias, 
-                                     numBits=weightInqBits, strategy=weightInqStrategy)
+                                     numLevels=weightInqLevels, 
+                                     strategy=weightInqStrategy, 
+                                     quantInitMethod=weightInqQuantInit)
             else: 
                 return nn.Linear(ni, no, bias=bias)
         
+        def dropout(p=0.5):
+            if withDropout:
+                return nn.Dropout(p)
+            else:
+                return nn.Identity()
+            
+        if alternateSizes:
+            #following LQ-net
+            c0 = 3
+            c1 = int(96 * capacity)
+            c2 = int(256 * capacity)
+            c3 = int(384 * capacity)
+            c4 = int(384 * capacity)
+            c5 = 256
+            nh = 4096
+        else: 
+            c0 = 3
+            c1 = int(64 * capacity)
+            c2 = int(192 * capacity)
+            c3 = int(384 * capacity)
+            c4 = int(256 * capacity)
+            c5 = 256
+            nh = 4096
+            
             
         # convolutional layers
         if quantSkipFirstLayer:
@@ -88,13 +121,19 @@ class AlexNet(nn.Module):
         self.phi5_bn   = nn.BatchNorm2d(c5)
         self.phi5_act  = activ('phi5_act', c5)
         # fully connected layers
+        self.phi6_do   = dropout()
         self.phi6_fc   = linear('phi6_fc', c5*6*6, nh, bias=False)
         self.phi6_bn   = nn.BatchNorm1d(nh)
         self.phi6_act  = activ('phi6_act', nh)
+        self.phi7_do   = dropout()
         self.phi7_fc   = linear('phi7_fc', nh, nh, bias=False)
         self.phi7_bn   = nn.BatchNorm1d(nh)
         self.phi7_act  = activ('phi7_act', nh)
-        self.phi8_fc   = linear('phi8_fc', nh, 1000, bias=False)
+        
+        if quantSkipLastLayer:
+            self.phi8_fc   = nn.Linear(nh, 1000, bias=False)
+        else:
+            self.phi8_fc   = linear('phi8_fc', nh, 1000, bias=False)
         self.phi8_bn   = nn.BatchNorm1d(1000)
         
         if weightInqSchedule != None: 
@@ -122,9 +161,11 @@ class AlexNet(nn.Module):
         x = self.phi5_bn(x)
         x = self.phi5_act(x)
         x = x.view(-1, torch.Tensor(list(x.size()[-3:])).to(torch.int32).prod().item())
+        x = self.phi6_do(x)
         x = self.phi6_fc(x)
         x = self.phi6_bn(x)
         x = self.phi6_act(x)
+        x = self.phi7_do(x)
         x = self.phi7_fc(x)
         x = self.phi7_bn(x)
         x = self.phi7_act(x)
@@ -159,6 +200,7 @@ if __name__ == '__main__':
     import torchvision as tv
     modelRef = tv.models.alexnet(pretrained=True)
     stateDictRef = modelRef.state_dict()
+    #batch normalization not in original model...?!
 
 
 

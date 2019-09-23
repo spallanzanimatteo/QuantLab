@@ -1,0 +1,51 @@
+{
+  "description": "",
+  "indiv": {
+    "net": {
+      "class": "AlexNet",
+      "params": {    
+        "quantAct": false,
+        "quantWeights": true,
+        "quantSkipFirstLayer": true, 
+        "quantSkipLastLayer": true, 
+        "alternateSizes": true,
+        "weightInqStrategy": "magnitude-SRQ",
+        "weightInqBits": 2,  
+        "weightInqSchedule": {
+        } 
+      },
+      "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings": []
+      }
+    },
+    "optimizer": {
+      "class": "SGD",
+      "params": {"lr": 1e-3, "momentum": 0.9}
+    },
+    "lr_scheduler": {
+      "class": "ReduceLROnPlateau",
+        "step_metric": "valid_metric",
+        "params": {}
+    },
+    "data": {
+      "augment": "torchvision",
+      "bs_train": 512,
+      "bs_valid": 128
+    },
+    "max_epoch": 1000
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
+  }
+}

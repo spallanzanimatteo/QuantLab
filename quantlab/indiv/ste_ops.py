@@ -90,17 +90,24 @@ class STEActivation(torch.nn.Module):
             self.started = True
         
 
-#TESTING
-u = torch.randn(10, requires_grad=True)
-x = u*2
 
-#y = STERoundFunctional(x)
-eps = 1e-8
-y = clampWithGradInwards(x, -1, 1)
-
-L = (y-torch.ones_like(y)*10).norm(2) # pull to 10
-#L = y.norm(2) # pull to 0
-L.backward()
+if __name__ == "__main__":
+    #TESTING
+    u = torch.randn(10, requires_grad=True)
+    x = u*2
+    
+    y = STEActivation(numLevels=2)(x)
+#    y = STERoundFunctional(x)
+#    y = clampWithGradInwards(x, -1, 1)
+    
+#    L = (y-torch.ones_like(y)*10).norm(2) # pull to 10
+    L = y.norm(2) # pull to 0
+    L.backward()
+    
+    
+    
+    
+    
 
 
 

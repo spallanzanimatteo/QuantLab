@@ -2,9 +2,20 @@
 
 exp008: AlexNet, full precision, LR scheduler, ...
 
-exp018: MobileNetV2, RSQ, 2-bit, torchvision-pretr.
+exp014: baseline
+exp014: baseline
+
+exp020: MobileNetV2, RSQ, 2-bit, torchvision-pretr.  -> not converging fast enough...
+
+exp021: ResNet-18 baseline training
+exp022: ResNet-18 RPR, LR 1e-4
+exp023: ResNet-18 RPR, 10x LR (1e-3)
+exp024: ResNet-18 RPR, 10x LR (1e-3), no 1st iteration non-quant
 
 
+
+
+todo: let's avoid the first destroying training epoch with too high learning rate!!
 
 
 

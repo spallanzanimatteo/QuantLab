@@ -7,16 +7,21 @@
         "quantAct": false, 
         "quantWeights": true,
         "quantSkipFirstLayer": true,
-        "weightInqBits": 2, 
-        "weightInqStrategy": "magnitude-SRQ", 
-        "stepEveryEpoch": true,
+        "weightInqBits": 1, 
+        "weightInqStrategy": "magnitude", 
+        "stepEveryEpoch": false,
         "weightInqSchedule": {
-          "100": 0.9,
-          "150": 0.95,
-          "200": 0.975,
-          "250": 0.9875,
-          "320": 0.99375,
-          "400": 1.0
+          "150": 0.2,
+          "250": 0.4,
+          "350": 0.6,
+          "450": 0.7,
+          "550": 0.8,
+          "650": 0.85,
+          "750": 0.9,
+          "850": 0.9375,
+          "950": 0.96875,
+         "1050": 0.984375,
+         "1150": 1.0
         }
       },
       "pretrained": null
@@ -37,24 +42,46 @@
       "class": "Adam",
       "params": {"lr": 1e-3}
     },
-    "lr_scheduler": {
-        "class": "HandScheduler",
-        "params": {
-          "schedule": {
-              "75": 0.1,
-              "101": 1.0,
-              "370": 0.1,
-              "420": 0.01
-          }
-        }
-    },
-    "data": {
+   "lr_scheduler": {
+     "class": "HandScheduler",
+     "params": {
+       "schedule": {
+          "151": 1.0,
+          "251": 1.0,
+          "351": 1.0,
+          "451": 1.0,
+          "551": 1.0,
+          "651": 1.0,
+          "751": 1.0,
+          "851": 1.0,
+          "951": 1.0,
+         "1051": 1.0,
+         "1151": 1.0,
+          
+          "100": 0.1,
+          "200": 0.1,
+          "300": 0.1,
+          "400": 0.1,
+          "500": 0.1,
+          "600": 0.1,
+          "700": 0.1,
+          "800": 0.1,
+          "900": 0.1,
+         "1000": 0.1,
+         "1100": 0.1,
+         "1200": 0.1,
+
+         "1250": 0.01
+      }
+    }
+   },
+   "data": {
       "augment": true,
       "valid_fraction": 0.1,
       "bs_train": 256,
       "bs_valid": 64
-    },
-    "max_epoch": 450
+   },
+   "max_epoch": 1350
   },
   "protocol": {
     "update_metric": "valid_metric",

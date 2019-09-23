@@ -10,6 +10,7 @@ def train(logbook, net, device, loss_fn, opt, train_l):
     logbook.meter.reset()
     bar = FillingSquaresBar('Training \t', max=len(train_l))
     controllers = indiv.Controller.getControllers(net)
+        
     for i_batch, data in enumerate(train_l):
         
         # load data onto device
@@ -36,8 +37,9 @@ def train(logbook, net, device, loss_fn, opt, train_l):
         opt.zero_grad()
         loss.backward()
         opt.step()
-    for ctrlr in controllers:
-        ctrlr.step(logbook.i_epoch, opt, tensorboardWriter=logbook.writer)
+        for ctrl in controllers: 
+            ctrl.step_postOptimStep()
+        
     bar.finish()
     stats = {
         'train_loss':   logbook.meter.avg_loss,
@@ -50,7 +52,7 @@ def train(logbook, net, device, loss_fn, opt, train_l):
     return stats
 
 
-def test(logbook, net, device, loss_fn, test_l, valid=False):
+def test(logbook, net, device, loss_fn, test_l, valid=False, prefix=None):
     """Run a validation epoch."""
     logbook.meter.reset()
     bar_title = 'Validation \t' if valid else 'Test \t'
@@ -67,10 +69,6 @@ def test(logbook, net, device, loss_fn, test_l, valid=False):
             tensor_stats, pr_outs = net.forward_with_tensor_stats(inputs)
             loss                  = loss_fn(pr_outs, gt_labels)
             
-            #add graph to tensorboard
-#            if logbook.i_epoch == 1 and i_batch == 0:
-#                logbook.writer.add_graph(net, inputs)
-            
             # update statistics
             logbook.meter.update(pr_outs, gt_labels, loss.item(), track_metric=True)
             bar.suffix = 'Total: {total:} | ETA: {eta:} | Epoch: {epoch:4d} | ({batch:5d}/{num_batches:5d})'.format(
@@ -82,7 +80,9 @@ def test(logbook, net, device, loss_fn, test_l, valid=False):
             bar.suffix = bar.suffix + logbook.meter.bar()
             bar.next()
     bar.finish()
-    prefix = 'valid' if valid else 'test'
+
+    if prefix == None: 
+        prefix = 'valid' if valid else 'test'
     stats = {
         prefix+'_loss':   logbook.meter.avg_loss,
         prefix+'_metric': logbook.meter.avg_metric

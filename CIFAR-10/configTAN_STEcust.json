@@ -5,12 +5,14 @@
         "class": "VGG",
         "params": {
         "quantAct": true, 
-        "quantActSTENumLevels": 2, 
+        "quantActSTENumLevels": 4, 
         "quantWeights": true,
         "quantSkipFirstLayer": true,
-        "weightInqBits": 2, 
+        "quantSkipLastLayer": true,
+        "weightInqBits": 1, 
         "weightInqStrategy": "magnitude-SRQ", 
         "stepEveryEpoch": true,
+        "weightInit": null,
         "weightInqSchedule": {
         }
       },
@@ -30,7 +32,7 @@
     },
     "optimizer": {
       "class": "Adam",
-      "params": {"lr": 1e-5}
+      "params": {"lr": 1e-3}
     },
     "lr_scheduler": {
         "class": "HandScheduler",
@@ -45,9 +47,10 @@
     },
     "data": {
       "augment": true,
-      "valid_fraction": 0.1,
-      "bs_train": 256,
-      "bs_valid": 64
+      "valid_fraction": 0.0,
+      "useTestForVal": true,
+      "bs_train": 512,
+      "bs_valid": 256
     },
     "max_epoch": 400
   },

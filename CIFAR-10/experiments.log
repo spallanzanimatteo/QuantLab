@@ -1,4 +1,5 @@
 exp000: full-precision, lr=1e-3, lrSchedule (cyclic)                   -->  6.40%
+exp001: full-precision, lr=1e-3, lrSchedule (cyclic)                   -->  6.50%
 
 exp010: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule
 exp011: TWN, INQ, 2-bit, lr=1e-3, inq- and lrSchedule (longer )
@@ -10,39 +11,51 @@ exp016: exp014 + CrossEntropyLoss instead of custom HingeLoss          --> incom
 
 exp020: TAN, lr=1e-3, lrSchedule, ANA                                  -->  8.48%
 exp021: TAN, lr=1e-3, lrSchedule, STEcust                              -->  8.70%
+exp022: exp021 + BAN instead of TAN; new STEcust impl.  --> failed
 
 exp030: TNN, act STE, wght STE, lrSchedule                             -->  9.96%
 exp031: TNN, act STE, wght INQ 2-bit                                   -->  9.70%
+exp032: TNN -- exp021 pretr.->STEcust+SRQ                              -->  9.00%
 
+SRQ type-I : hard transition, no full-prec. weights
 exp040: magn-SRQ, quantAll, ramp-up, repartition every 100ep           --> incomplete (to 90% only), looking good (6.94%)
 exp041: magn-SRQ, quantAll, ramp-up, repartition every 100ep, to full  -->  8.95% (last step too hard, 7.95%@95%)
 exp042: magn-SRQ, quantAll, 90% quant always, repart. all 100ep        --> incomplete (90% only), far too slow
 
-also added smooth transition between samplings (i.e. keeping full-prec weights underneath)!!!
+SRQ type-II : 
+ - smooth transition between samplings (i.e. restore full-prec weights); 
+ - MUUUCH faster
 exp066: magn-SRQ, quantAll, warm-up 150 ep., ramp-up, repart. all 1ep  -->  6.97%
 exp067: magn-SRQ, quantAll, warm-up  20 ep., ramp-up, repart. all 1ep  -->  7.43%
 
+SRQ type-III : per-batch instead of per-epoch SRQ
+exp068: + per-batch SRQ (slow due to frequent quantization!) - crazy slow -->  7.00%
 exp069: faster ramp-up, added features (graph, inq/fraction), skip 1st -->  6.56%
 
+(back to) SRQ type-II; now with pretraining
 exp070: exp069 pretr., super-fast schedule, 0.1x LR than exp069        -->  6.90%
 exp071: exp069 pretr., super-fast schedule, same LR than exp069        -->  6.70%
 exp072: exp069 pretr., crazy-fast schedule, same LR than exp069        -->  6.90%
 exp073: exp069 pretr., super-fast schedule, same LR than exp069, numBit=3   6.48%
 
-exp076: exp021 pretr.->STEcust+SRQ  --> 9.00%
 
-exp078: + per-batch SRQ (slow due to frequent quantization!)
-
-079 : BUG!!
-exp080: exp021 + BAN instead of TAN; new STEcust impl.
-exp083: exp071 + BWN instead of TWN
-exp084: exp071 + BWN instead of TWN, quant to s/2
-exp085: exp071 + BWN instead of TWN, quant to s/2; s=2*median(abs(w))
-exp087: full-precision, lr=1e-3, lrSchedule (cyclic)
-exp089: exp071 + BWN instead of TWN + 10x LR                           -->  7.58%
-exp090: exp071 + BWN instead of TWN + first 5 eps at 10x LR            -->  6.82%
+exp083: exp071 + BWN instead of TWN                                    --> failed
+exp084: exp071 + BWN instead of TWN, quant to s/2                      --> failed
+exp085: exp071 + BWN instead of TWN, quant to s/2; s=2*median(abs(w))  --> failed
+        note on 084, 085: not meaningful, because s was already fixed!
+exp086: exp071 + BWN instead of TWN + 10x LR                           -->  7.58%
+exp087: exp071 + BWN instead of TWN + first 5 eps at 10x LR            -->  6.82%
 #!!!! experiments 085 failes, because s is already determined, also exp084 affected !!!!
 
+
+analyzing the fraction vs. LR schedule issue
+init: exp086 (particularly) and 087 are super-important as they show the issue of increasing loss
+thoughts: best visbile with low learning rate; 087 like 086, but drops the LR by 10x after ep5
+exp202: high LR (w/ schedule), but to 0.95 from start (w/ schedule)
+
+idea: quantize fast and relax again?! OR: should there be no clear step as quant. is increased?!
+idea: working only with the LR?!?!
+exp203: fixed fraction, LR scheduler
 
 Could also be combined with STE (bad idea, right?!)
 Also: rethink initial transition?! smoother?
@@ -62,6 +75,9 @@ tensorboard filters:
 
 
 
+learning rate vs. fraction
+
+
 grouped weights annealing?!?! or even just otherwise a smoother transition....
 higher learning rates after partial quantization?!?!
 loss function of dLAC for max capacity (or transfer learning with smoothened ground truth)
@@ -70,3 +86,12 @@ loss function of dLAC for max capacity (or transfer learning with smoothened gro
 partition-wise retraining
 INQ controller
 dLAC loss: only gradients when needed (use capacity better?!)
+
+what models are most suitable for TWNs? 
+
+possible long-term extension: 
+- follow the Born-Again-Neural-Network approach to not waste capacity on 'hopeless' samples
+- quantize symbols instead of individual weights (i.e. multi-weight symbols, maybe wavelet-style)
+- discuss it more in-depth how this can be used for model compression
+- TAN, BAN, ...: make it a voting thing (potentially in activation groups)
+- how large is the space of BNNs anyway??

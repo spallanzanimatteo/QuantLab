@@ -7,9 +7,11 @@
         "quantAct": false, 
         "quantWeights": true,
         "quantSkipFirstLayer": true,
-        "weightInqBits": 2, 
+        "quantSkipLastLayer": true,
+        "weightInqBits": 1, 
         "weightInqStrategy": "magnitude-SRQ", 
         "stepEveryEpoch": true,
+        "variant": null,
         "weightInqSchedule": {
         }
       },
@@ -29,7 +31,7 @@
     },
     "optimizer": {
       "class": "Adam",
-      "params": {"lr": 1e-3}
+      "params": {"lr": 1e-3, "weight_decay": 5e-5}
     },
     "lr_scheduler": {
         "class": "HandScheduler",
@@ -44,9 +46,10 @@
     },
     "data": {
       "augment": true,
-      "valid_fraction": 0.1,
-      "bs_train": 256,
-      "bs_valid": 64
+      "valid_fraction": 0.0,
+      "useTestForVal": true,
+      "bs_train": 512,
+      "bs_valid": 256
     },
     "max_epoch": 200
   },

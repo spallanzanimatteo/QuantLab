@@ -1,9 +1,10 @@
 # Copyright (c) 2019 UniMoRe, Matteo Spallanzani
+# Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 import os
 import torch
 import torchvision
-from torchvision.transforms import RandomResizedCrop, RandomHorizontalFlip, Resize, CenterCrop, ToTensor, Normalize, Compose
+from torchvision.transforms import RandomResizedCrop, RandomHorizontalFlip, Resize, RandomCrop, CenterCrop, ToTensor, Normalize, Compose
 
 
 _ImageNet = {
@@ -135,6 +136,12 @@ def get_transforms(augment):
                            Normalize(**_ImageNet['Normalize'])])
     elif augment == "torchvision": 
         train_t = Compose([RandomResizedCrop(224),
+                           RandomHorizontalFlip(),
+                           ToTensor(),
+                           Normalize(**_ImageNet['Normalize'])])
+    elif augment == "torchvision2": 
+        train_t = Compose([Resize(256),
+                           RandomCrop(224),
                            RandomHorizontalFlip(),
                            ToTensor(),
                            Normalize(**_ImageNet['Normalize'])])

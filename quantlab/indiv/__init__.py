@@ -12,6 +12,9 @@ class Controller(object):
         
     def step_preValidation(self, *args, **kwargs):
         pass
+        
+    def step_postOptimStep(self, *args, **kwargs):
+        pass
     
     @staticmethod
     def getControllers(net):

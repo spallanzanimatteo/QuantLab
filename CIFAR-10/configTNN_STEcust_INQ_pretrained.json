@@ -9,10 +9,9 @@
               "quantActSTENumLevels": 3, 
               "quantWeights": true,
               "quantSkipFirstLayer": true,
-              "weightInqBits": 3, 
               "weightInqStrategy": "magnitude-SRQ", 
               "stepEveryEpoch": true,
-              "weightInqBits": 2, 
+              "weightInqBits": 1, 
               "weightInqSchedule": {
                   "0": 0.9,
                   "1": 0.9,
@@ -25,8 +24,8 @@
           },
           "pretrained": {
               "file": {
-                  "exp_id": 21, 
-                  "epoch": 400
+                  "exp_id": 276, 
+                  "epoch": "best"
               }
           }
     },
@@ -58,7 +57,7 @@
     "data": {
       "augment": true,
       "valid_fraction": 0.1,
-      "bs_train": 256,
+      "bs_train": 512,
       "bs_valid": 64
     },
     "max_epoch": 320

@@ -33,8 +33,21 @@ def get_transforms(augment):
 def load_data_sets(dir_data, data_config):
     transforms           = get_transforms(data_config['augment'])
     trainvalid_set       = torchvision.datasets.CIFAR10(root=dir_data, train=True, download=True)
-    len_train            = int(len(trainvalid_set) * (1.0 - data_config['valid_fraction']))
-    train_set, valid_set = transform_random_split(trainvalid_set, [len_train, len(trainvalid_set) - len_train],
-                                                [transforms['training'], transforms['validation']])
-    test_set             = torchvision.datasets.CIFAR10(root=dir_data, train=False, download=True, transform=transforms['validation'])
+    if 'useTestForVal' in data_config.keys() and data_config['useTestForVal'] == True:
+        train_set, valid_set = transform_random_split(trainvalid_set, 
+                                                      [len(trainvalid_set), 0],
+                                            [transforms['training'], transforms['validation']])
+        test_set = torchvision.datasets.CIFAR10(root=dir_data, train=False, 
+                                                download=True, 
+                                                transform=transforms['validation'])
+        valid_set = test_set
+        print('using test set for validation.')
+    else:
+        len_train = int(len(trainvalid_set) * (1.0 - data_config['valid_fraction']))
+        train_set, valid_set = transform_random_split(trainvalid_set, 
+                                                      [len_train, len(trainvalid_set) - len_train],
+                                                      [transforms['training'], transforms['validation']])
+        test_set = torchvision.datasets.CIFAR10(root=dir_data, train=False, 
+                                                download=True, 
+                                                transform=transforms['validation'])
     return train_set, valid_set, test_set

@@ -1,0 +1,47 @@
+{
+  "description": "",
+  "indiv": {
+    "net": {
+      "class": "MobileNetv2QuantWeight",
+      "params": {
+        "quantAct": false,
+        "quantWeights": false,
+        "quantSkipFirstLayer": true, 
+        "quantSkipLastLayer": true, 
+        "pretrained": true
+      },
+      "pretrained": null
+    },
+    "loss_function": {
+      "class": "CrossEntropyLoss",
+      "params": {}
+    }
+  },
+  "treat": {
+    "thermostat": {
+      "params": {
+        "noise_schemes": {},
+        "bindings": []
+      }
+    },
+    "optimizer": {
+      "class": "Adam",
+      "params": {"lr": 1e-4}
+    },
+    "lr_scheduler": {
+      "class": "ReduceLROnPlateau",
+        "step_metric": "train_metric",
+        "params": {}
+    },
+    "data": {
+      "augment": "torchvision",
+      "bs_train": 256,
+      "bs_valid": 64
+    },
+    "max_epoch": 1000
+  },
+  "protocol": {
+    "update_metric": "valid_metric",
+    "metric_period": 1
+  }
+}

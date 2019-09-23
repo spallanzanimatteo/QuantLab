@@ -2,28 +2,26 @@
   "description": "",
   "indiv": {
     "net": {
-      "class": "MobileNetv2QuantWeight",
+      "class": "AlexNet",
       "params": {
-        "capacity": 1,
-        "expansion": 6,
         "quantAct": false,
         "quantWeights": true,
-        "weightInqBits": 2,
-        "weightInqStrategy": "magnitude-SRQ",
         "quantSkipFirstLayer": true,
         "quantSkipLastLayer": true,
-        "pretrained": true,
+        "alternateSizes": true,
+        "weightInqStrategy": "magnitude-SRQ",
+        "weightInqBits": 1,
         "weightInqSchedule": {
-          "0": 0.9,
-          "1": 0.9,
-          "20": 0.95,
-          "30": 0.975,
-          "40": 0.9875,
-          "50": 0.99375,
-          "70": 1.0
+           "0": 0.9,
+           "1": 0.9
         }
       },
-      "pretrained": null
+      "pretrained": {
+          "file": {
+              "exp_id": 56, 
+              "epoch": "best"
+          }
+      }
     },
     "loss_function": {
       "class": "CrossEntropyLoss",
@@ -39,21 +37,19 @@
     },
     "optimizer": {
       "class": "Adam",
-      "params": {"lr": 1e-4}
+      "params": {"lr": 1e-3}
     },
     "lr_scheduler": {
       "class": "HandScheduler",
       "params": {
           "schedule": {
-              "60": 0.1,
-              "80": 0.01
           }
       }
     },
     "data": {
       "augment": "torchvision",
-      "bs_train": 256,
-      "bs_valid": 64
+      "bs_train": 512,
+      "bs_valid": 128
     },
     "max_epoch": 1000
   },

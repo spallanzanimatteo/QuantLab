@@ -7,23 +7,23 @@
         "quantAct": false, 
         "quantWeights": true,
         "quantSkipFirstLayer": true,
-        "weightInqBits": 1, 
+        "quantSkipLastLayer": true,
+        "variant": "VGG-Small",
+        "weightInqLevels": 3, 
         "weightInqStrategy": "magnitude-SRQ", 
         "stepEveryEpoch": true,
+        "rescaleWeights": false,
+        "weightInqQuantInit": "uniform-l1opt",
         "weightInqSchedule": {
-          "0": 0.9,
-          "1": 0.9,
-          "20": 0.95,
-          "30": 0.975,
-          "40": 0.9875,
-          "50": 0.99375,
-          "70": 1.0
+             "0": 0.9,
+             "1": 0.9,
+            "50": 1.0
         }
       },
       "pretrained": {
           "file": {
-              "exp_id": 69, 
-              "epoch": 100
+              "exp_id": 327, 
+              "epoch": "best"
           }
       }
     },
@@ -41,25 +41,26 @@
     },
     "optimizer": {
       "class": "Adam",
-      "params": {"lr": 1e-2}
+      "params": {"lr": 1e-3}
     },
     "lr_scheduler": {
         "class": "HandScheduler",
         "params": {
-          "schedule": {
-              "5": 0.1,
-              "60": 0.01,
-              "80": 0.001
-          }
+            "schedule": {
+                "20": 0.1,
+                "40": 0.01,
+                "60": 0.01
+            }
         }
     },
     "data": {
       "augment": true,
-      "valid_fraction": 0.1,
-      "bs_train": 256,
-      "bs_valid": 64
+      "valid_fraction": 0.0,
+      "useTestForVal": true,
+      "bs_train": 512,
+      "bs_valid": 256
     },
-    "max_epoch": 90
+    "max_epoch": 70
   },
   "protocol": {
     "update_metric": "valid_metric",

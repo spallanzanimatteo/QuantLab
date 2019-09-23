@@ -124,7 +124,7 @@ def get_transforms(augment):
                        RandomHorizontalFlip(),
                        ToTensor(),
                        ColorJitter(),
-                       Lighting(_ImageNet['PCA']),
+                       Lighting(_ImageNet['PCA'], alphastd=0.1),
                        Normalize(**_ImageNet['Normalize'])])
     valid_t = Compose([Resize(256),
                        CenterCrop(227),
