@@ -3,8 +3,6 @@
 import torch
 import quantlab.indiv as indiv
 
-
-
 class ClampWithGradInwards(torch.autograd.Function):
     """Clamps the input, passes the grads for inputs inside or at the
     """
@@ -55,7 +53,6 @@ class STEActivation(torch.nn.Module):
         super().__init__()
         self.startEpoch = startEpoch
         self.started = startEpoch <= 0
-#        assert(numLevels % 2 == 1 and numLevels >= 3)
         assert(numLevels >= 2)
         self.numLevels = numLevels
         self.passGradsWhenClamped = passGradsWhenClamped

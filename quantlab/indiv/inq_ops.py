@@ -6,8 +6,6 @@ import torch
 import torch.nn as nn
 import quantlab.indiv as indiv
 
-
-
 class INQController(indiv.Controller):
     """Instantiate typically once per network, provide it with a list of INQ 
     modules to control and a INQ schedule, and insert a call to the step 
@@ -47,10 +45,8 @@ class INQController(indiv.Controller):
                
     def step_postOptimStep(self, *args, **kwargs):
         if self.rescaleWeights:
-            #print('rescaling')
             for m in self.modules:
                 m.weightInqCtrl.rescaleWeights()
-#                m.weight.data.mul_(0.5/m.weight.data.abs().mean().item())
     
     @staticmethod
     def getInqModules(net):
@@ -66,14 +62,13 @@ class INQParameterController:
     def __init__(self, module, parameterName, numLevels=3, 
                  strategy="magnitude", backCompat=True, 
                  quantInitMethod=None):#'uniform-l1opt'
-#        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         
         self.module = module
         self.parameterName = parameterName
         self.backCompat = backCompat
         
         self.numLevels = numLevels
-        self.strategy = strategy # "magnitude" or "random" or "magnitude-SRQ"
+        self.strategy = strategy # "magnitude" or "random" or "magnitude-SRQ"/"RPR"
         self.fraction = 0.0
         self.quantInitMethod = quantInitMethod
         
@@ -87,14 +82,7 @@ class INQParameterController:
             #more structured; adds support for multiple indep. INQ parameters
             self.pnameFrozen = parameterName + '_inqFrozen'
             self.pnameS = parameterName + '_inqS'
-            
-#        module.register_parameter(pnameFrozen, 
-#                                  nn.Parameter(torch.full_like(self.weight, float('NaN')), 
-#                                               requires_grad=False))
-#        module.register_parameter(pnameS, 
-#                                  nn.Parameter(torch.full((1,), float('NaN')), 
-#                                               requires_grad=False))
-            
+                        
         module.__setattr__(self.pnameFrozen, 
                            nn.Parameter(torch.full_like(self.weight, float('NaN')), 
                                         requires_grad=False))
@@ -165,8 +153,6 @@ class INQParameterController:
                                       'uniform-l2opt', 
                                       'uniform-perCh-l2opt', 
                                       'uniform-linfopt']:
-#            import numpy
-#            getQLs = lambda s: numpy.linspace(-s, s, num=self.numLevels).tolist()
             getQLs = lambda s: torch.linspace(-s, s, steps=self.numLevels)
             if self.fraction == 0.0 and math.isnan(self.s):
                 import scipy.optimize
@@ -210,22 +196,7 @@ class INQParameterController:
             assert(False)
         self.fraction = fraction
 
-#        if self.fraction == 0.0 and math.isnan(self.s):
-#                self.s = torch.max(torch.abs(self.weight.data)).item()
-#        self.fraction = fraction
-            
-#        #compute quantization levels
-#        n_1 = math.floor(math.log((4*self.s)/3, 2))
-#        n_2 = int(n_1 + 2 - (self.numLevels // 2))
-#        if self.numLevels >= 3:
-#            quantLevelsPos = (2**i for i in range(n_2, n_1+1))
-#            quantLevelsNeg = (-2**i for i in range(n_2, n_1+1))
-#            quantLevels = itertools.chain(quantLevelsPos, [0], quantLevelsNeg)
-#        else: 
-#            assert(self.numLevels == 2)
-#            quantLevels = [self.s/2, -self.s/2]#[2**n_2, -2**n_2]
-        
-        if self.strategy == "magnitude-SRQ":# or self.strategy == "magnitude-SRQ-perBatch":
+        if self.strategy == "magnitude-SRQ" or self.strategy == "RPR":
             if self.fraction == None:
                 return
             
@@ -336,8 +307,6 @@ class INQConv2d(nn.Conv2d):
         self.weightInqCtrl.inqStep(fraction)
 
     def forward(self, input):
-#        if self.strategy == "magnitude-SRQ-perBatch":
-#            self.step(self.fraction)
         weightAssembled = self.weightInqCtrl.inqAssembleWeight(self)
         
         if self.padding_mode == 'circular':
@@ -371,9 +340,7 @@ if __name__ == '__main__':
 
 
     model = INQLinear(2, 3, bias=False, 
-                      numLevels=numLevels, strategy="magnitude-SRQ")
-#    model = INQConv2d(1, 2, kernel_size=3, bias=False, 
-#                      numBits=2, strategy="magnitude-SRQ")
+                      numLevels=numLevels, strategy="RPR")
 
     print(model.weight)
     print(model.weightFrozen)
