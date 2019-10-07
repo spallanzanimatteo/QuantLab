@@ -2,16 +2,16 @@
   "description": "",
   "indiv": {
     "net": {
-      "class": "ResNet",
+      "class": "MobileNetv2QuantWeight",
       "params": {
-        "arch": "resnet50",
         "quantAct": false,
         "quantWeights": true,
         "quantSkipFirstLayer": true,
         "quantSkipLastLayer": true,
         "weightInqStrategy": "magnitude-SRQ",
-        "weightInqLevels": 2,
+        "weightInqLevels": 3,
         "weightInqQuantInit": "uniform-perCh-l2opt",
+          "quantDepthwSep": false,
         "pretrained": true,
         "weightInqSchedule": {
            "0": 0.9,
@@ -46,7 +46,7 @@
       "bs_train": 256,
       "bs_valid": 64
     },
-    "max_epoch": 155
+    "max_epoch": 200
   },
   "protocol": {
     "update_metric": "valid_metric",

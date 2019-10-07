@@ -4,9 +4,9 @@
 import math
 import torch.nn as nn
 
-from quantlab.indiv.stochastic_ops import StochasticActivation, StochasticLinear, StochasticConv2d
+#from quantlab.indiv.stochastic_ops import StochasticActivation, StochasticLinear, StochasticConv2d
 from quantlab.indiv.inq_ops import INQController, INQLinear, INQConv2d
-from quantlab.indiv.ste_ops import STEActivation
+#from quantlab.indiv.ste_ops import STEActivation
 
 from quantlab.ImageNet.MobileNetv2.mobilenetv2baseline import MobileNetv2Baseline
 
@@ -14,12 +14,16 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
     """MobileNetv2 Convolutional Neural Network."""
     def __init__(self, capacity=1, expansion=6, quant_schemes=None, 
                  quantWeights=True, quantAct=True,
-                 weightInqSchedule=None, weightInqBits=2, weightInqStrategy="magnitude", 
-                 quantSkipFirstLayer=False, quantSkipLastLayer=False, pretrained=False):
+                 weightInqSchedule=None, weightInqLevels=None, 
+                 weightInqStrategy="magnitude", weightInqQuantInit=None, 
+                 quantSkipFirstLayer=False, quantSkipLastLayer=False, 
+                 quantDepthwSep=True, pretrained=False):
         
         super().__init__(capacity, expansion)
+        assert(quantAct == False)
+        
         c0 = 3
-        t0 = int(32 * capacity) * 1
+        t0 = int(32 * capacity)
         c1 = int(16 * capacity)
         t1 = c1 * expansion
         c2 = int(24 * capacity)
@@ -35,15 +39,17 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
         c7 = int(320 * capacity)
         c8 = max(int(1280 * capacity), 1280)
         
-        assert(quantAct == False)
-            
         def conv2d(ni, no, kernel_size=3, stride=1, padding=1, groups=1, bias=False):
-            if quantWeights:
+            if (quantWeights and 
+                (quantDepthwSep or 
+                 (ni != groups or ni != no))): # not depthw. sep. layer
                 assert(weightInqSchedule != None)
                 return INQConv2d(ni, no, 
                                  kernel_size=kernel_size, stride=stride, 
                                  padding=padding, groups=groups, bias=bias, 
-                                 numBits=weightInqBits, strategy=weightInqStrategy)
+                                 numLevels=weightInqLevels, 
+                                 strategy=weightInqStrategy, 
+                                 quantInitMethod=weightInqQuantInit)
             else: 
                 return nn.Conv2d(ni, no, 
                                  kernel_size=kernel_size, stride=stride, 
@@ -51,9 +57,6 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
         
         def activ():
             return nn.ReLU6(inplace=True)
-#            return nn.ReLU(inplace=True)
-            
-#        assert(False) # IMPLEMENTATION INCOMPLETE!!!!
             
         # first block
         if quantSkipFirstLayer:
@@ -290,30 +293,16 @@ class MobileNetv2QuantWeight(MobileNetv2Baseline):
         stateDictRefMapped.update(missingFields)
         self.load_state_dict(stateDictRefMapped, strict=True)
     
-    
-    
 if __name__ == '__main__':
     model = MobileNetv2QuantWeight(quantAct=False, quantWeights=True, 
-                 weightInqSchedule={}, weightInqBits=2, 
+                 weightInqSchedule={}, 
+                 weightInqLevels=3, 
                  weightInqStrategy="magnitude-SRQ", 
+                 weightInqQuantInit='uniform-perCh-l2opt',
                  quantSkipFirstLayer=True,
                  quantSkipLastLayer=True, 
                  pretrained=True)
     
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
