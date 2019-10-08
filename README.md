@@ -20,8 +20,7 @@ This project provides the experimental environment used to produce the results r
 ### Installing
 Navigate to QuantLab's main folder and create the environment using Anaconda:
 ```
-$ cd ~/QuantLab/
-$ conda env create -f quantlab.yaml -n quantlab
+$ conda env create -f quantlab.yml -n quantlab
 ```
 In order to boost performances, QuantLab defines special *hard* folders indicating where to store datasets, training checkpoints and statistics about the experiments.
 For example, suppose that the system has two hard drives: a fast but small SSD and a slower but larger HDD.
@@ -31,7 +30,7 @@ Supposing that the folders 	`/fast/` and `/slow/` refer to folders on the SSD an
 $ mkdir /fast/QuantLab/
 $ mkdir /slow/QuantLab/
 ```
-Then, edit the pointers file `~/QuantLab/hard_folders.json` so that datasets and logs will be stored on the appropriate drive.
+Then, edit the pointers file `cfg/hard_storage.json` so that datasets and logs will be stored on the appropriate drive.
 
 ### Setup
 QuantLab main abstractions are the **problem** and the **experiment**.
@@ -59,22 +58,20 @@ The file `config.json` mentioned above provides exactly this information.
 ## Usage
 To use QuantLab, navigate to its main directory and activate the environment:
 ```
-$ cd ~/QuantLab/
-$ source activate quantlab
+$ conda activate quantlab
 ```
 To reproduce the quantization experiment on, for example, ImageNet, execute:
 ```
-$ (quantlab) python main.py --problem=ImageNet
+$ (quantlab) python main.py --problem=ImageNet --topology AlexNet
 ```
 When launched, QuantLab assigns a numeric `[ID]` to the experiment and creates a corresponding sub-folder in the problem's `log` folder (in the above example, it would be `~/Quantlab/ImageNet/log/exp[ID]/`).
 The program will take periodic snapshots of the parameters and log statistics about the training.
 The experiment can also be interrupted and restarted from the last checkpoint:
 ```
-$ (quantlab) python main.py --problem=ImageNet --exp_id=[ID] --load=last
+$ (quantlab) python main.py --problem=ImageNet --topology AlexNet --exp_id=[ID] --load=last
 ```
 To monitor the logged statistics, open another shell, navigate to QuantLab's main folder and launch [TensorBoard](https://www.tensorflow.org/guide/summaries_and_tensorboard):
 ```
-$ cd ~/QuantLab/
-$ source activate quantlab
+$ conda activate quantlab
 $ (quantlab) tensorboard --logdir=ImageNet/exp[ID]/ --port=6006
 ```
