@@ -1,11 +1,10 @@
 # Copyright (c) 2019 ETH Zurich, Lukas Cavigelli
 
 import torch
-# import quantlab.indiv as indiv
 from . import Controller
 
 class ClampWithGradInwards(torch.autograd.Function):
-    """Clamps the input, passes the grads for inputs inside or at the range limit"""
+    """Clamps the input, passes the grads for inputs inside or at the range limit."""
     @staticmethod
     def forward(ctx, x, low, high):
         ctx.save_for_backward(x, low, high)
@@ -30,9 +29,11 @@ def clampWithGradInwards(x, low, high):
     return ClampWithGradInwards().apply(x, x.new([low]), x.new([high]))
 
 def STERoundFunctional(x):
+    #standard STE rounding/quantization (not including the clamping): 
+    # 1. forward: quantize x nearest integer values
+    # 2. backward: pass gradients through as without quantization
     return x - (x - x.round()).detach()
 
-# class STEController(indiv.Controller):
 class STEController(Controller):
     def __init__(self, modules, clearOptimStateOnStart=False):
         super().__init__()
@@ -49,10 +50,11 @@ class STEController(Controller):
         return [m for m in net.modules() if isinstance(m, STEActivation)]
 
 class STEActivation(torch.nn.Module):
-    """quantizes activations according to the straight-through estiamtor (STE). 
-    Needs a STEController, if startEpoch > 0
+    """Quantizes activations according to the straight-through estiamtor (STE). 
+    Needs a STEController, if startEpoch > 0. 
 
-    monitorEpoch: In this epoch, keep track of the maximal activation value (absolute value).
+    startEpoch: first epoch to start quantizing (default: 0). 
+    monitorEpoch: In this epoch, keep track of the maximal activation value (absolute value) for range normalization.
         Then (at epoch >= startEpoch), clamp the values to [-max, max], and then do quantization.
         If monitorEpoch is None, max=1 is used."""
     def __init__(self, startEpoch=0, numLevels=3, passGradsWhenClamped=False, monitorEpoch=None):
@@ -69,30 +71,25 @@ class STEActivation(torch.nn.Module):
         assert(numLevels >= 2)
         self.numLevels = numLevels
         self.passGradsWhenClamped = passGradsWhenClamped
-        self.absMaxValue = torch.nn.Parameter(torch.ones(1),
-                                              requires_grad=False)
+        self.absMaxValue = torch.nn.Parameter(torch.ones(1), requires_grad=False)
 
     def forward(self, x):
         if self.monitoring:
                 self.absMaxValue.data[0] = max(x.abs().max(), self.absMaxValue.item())
             
         if self.started:
-#            factor = 1/self.absMaxValue.item() * (self.numLevels // 2)
-#            xclamp = clampWithGrad(x, -1, 1)
             x = x / self.absMaxValue.item() # map from [-max, max] to [-1, 1]
             if self.passGradsWhenClamped:
-#                xclamp = clampWithGrad(x, -1, 1)
                 xclamp = clampWithGradInwards(x, -1, 1)
             else:
                 xclamp = x.clamp(-1, 1)
             
             y = xclamp
             y = (y + 1)/2 # map from [-1,1] to [0,1]
-            y = STERoundFunctional(y*(self.numLevels - 1))/(self.numLevels - 1)
-            y = 2*y - 1
-            y = y * self.absMaxValue.item() # map from [-1, 1] to [-max, max]
-#            factorLevels = (self.numLevels // 2)
-#            y = STERoundFunctional(xclamp*factorLevels)/factorLevels
+            # scale to [0, numLevels-1], round to nearest int, scale back: 
+            y = STERoundFunctional(y*(self.numLevels - 1))/(self.numLevels - 1) 
+            y = 2*y - 1 # map from [0,1] to [-1,1]
+            y = y * self.absMaxValue.item() # map from [-1, 1] back to [-max, max]
         else:
             y = x
         return y
@@ -116,24 +113,14 @@ class STEActivation(torch.nn.Module):
                 for m in net.modules() 
                 if isinstance(m, STEActivation)]
 
-
 if __name__ == "__main__":
     #TESTING
     u = torch.randn(10, requires_grad=True)
     x = u*2
     
-    y = STEActivation(numLevels=2)(x)
+    y = STEActivation(numLevels=3)(x)
 #    y = STERoundFunctional(x)
 #    y = clampWithGradInwards(x, -1, 1)
-    
 #    L = (y-torch.ones_like(y)*10).norm(2) # pull to 10
     L = y.norm(2) # pull to 0
     L.backward()
-    
-    
-    
-    
-    
-
-
-

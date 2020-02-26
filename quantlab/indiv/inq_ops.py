@@ -7,7 +7,10 @@ import torch.nn as nn
 from . import Controller
 
 class INQController(Controller):
-    """Instantiate typically once per network, provide it with a list of INQ 
+    """ Triggers the update in behavior by epoch index and resets the optimizer 
+    (if selected) based on the provided schedule (a dict mapping str(epochIdx) 
+    to INQ freezing fraction)
+    Instantiate typically once per network, provide it with a list of INQ 
     modules to control and a INQ schedule, and insert a call to the step 
     function once per epoch. """
     def __init__(self, modules, schedule, clearOptimStateOnStep=False, 
@@ -57,7 +60,7 @@ class INQController(Controller):
 
     
 class INQParameterController:
-    """Used to implement INQ functionality within a custom layer (e.g. INQConv2d).
+    """Used to implement INQ functionality for a specific parameter within a custom layer (e.g. weights in INQConv2d).
     Creates and register all relevant fields and parameters in the module. """
     def __init__(self, module, parameterName, numLevels=3, 
                  strategy="magnitude", backCompat=True, 
@@ -219,24 +222,19 @@ class INQParameterController:
             #get number of weights to quantize
             prevCount = self.weightFrozen.numel() - torch.isnan(self.weightFrozen.data).sum(dtype=torch.long).item()
             newCount = int(self.fraction*self.weightFrozen.numel())
-            # print('counts -- total: %d, prev: %d, new: %d' % (self.weightFrozen.numel(), prevCount, newCount))
             
             #find indexes of weights to quant
             if self.strategy == "magnitude":
-                # self.weight.data[~torch.isnan(self.weightFrozen.data)].fill_(0)
-                # _, idxsSorted = self.weight.data.flatten().abs().sort(descending=True)
                 nonQuantIdxs = torch.nonzero(torch.isnan(self.weightFrozen.flatten()))[:,0]
                 _, idxs = self.weight.flatten()[nonQuantIdxs].abs().sort(descending=True)
                 idxsSorted = nonQuantIdxs[idxs[:newCount-prevCount]]
             elif self.strategy == "random":
-                # idxsSorted = torch.randperm(self.weight.numel())[torch.isnan(self.weightFrozen.data.flatten())]
                 idxsSorted = torch.nonzero(torch.isnan(self.weightFrozen.flatten()))[torch.randperm(newCount-prevCount)]
             else:
                 assert(False)
             idxsFreeze = idxsSorted[:newCount-prevCount]
             
             #quantize the weights at these indexes
-            # print(self.weight.data.flatten()[idxsFreeze].numel())
             self.weightFrozen.data.flatten()[idxsFreeze] = self.inqQuantize(self.weight.data.flatten()[idxsFreeze], quantLevels)
         else: 
             assert(False)
@@ -309,12 +307,12 @@ class INQConv1d(nn.Conv1d):
 class INQConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, 
                  stride=1, padding=0, dilation=1, groups=1, 
-                 bias=True, #padding_mode='zeros', 
+                 bias=True, 
                  numLevels=3, strategy="magnitude", quantInitMethod=None):
         
         super().__init__(in_channels, out_channels, kernel_size, 
                  stride, padding, dilation, groups, 
-                 bias)#, padding_mode) # removed padding_mode for backward comp. to 0.4.1
+                 bias)
         
         self.weightInqCtrl = INQParameterController(self, 'weight', 
                                                     numLevels, strategy,
@@ -326,13 +324,6 @@ class INQConv2d(nn.Conv2d):
     def forward(self, input):
         weightAssembled = self.weightInqCtrl.inqAssembleWeight(self)
         
-#        if self.padding_mode == 'circular':
-#            expanded_padding = ((self.padding[1] + 1) // 2, self.padding[1] // 2,
-#                                (self.padding[0] + 1) // 2, self.padding[0] // 2)
-#            return nn.functional.conv2d(nn.functional.pad(input, expanded_padding, mode='circular'),
-#                                        weightAssembled, self.bias, self.stride,
-#                                        (0,), self.dilation, self.groups)
-
         return nn.functional.conv2d(input, weightAssembled, self.bias, self.stride,
                                     self.padding, self.dilation, self.groups)
 
@@ -349,15 +340,12 @@ if __name__ == '__main__':
     
     x_q = INQParameterController.inqQuantize(x, quantLevels)
     
-    
     import matplotlib.pyplot as plt
     plt.clf()
     plt.plot(x.numpy())
     plt.plot(x_q.numpy())
 
-
-    model = INQLinear(2, 3, bias=False, 
-                      numLevels=numLevels, strategy="RPR")
+    model = INQLinear(2, 3, bias=False, numLevels=numLevels, strategy="RPR")
 
     print(model.weight)
     print(model.weightFrozen)
